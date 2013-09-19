@@ -1,4 +1,39 @@
-tiny-api
-========
-
 The tiny api Project
+Copyright 2013 Michael C. Montero (mcmontero@gmail.com)
+
+GOAL
+----
+
+To provide a minimalist framework for developing REST based API's in PHP.  To
+automate as much functionality as possible for handling data interactions from
+the API end point to the data store.
+
+APACHE CONFIGURATION
+--------------------
+    - Add the following rewrite rule into your Apache configuration:
+
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME} -f
+                RewriteRule .* - [L]
+            RewriteRule .* /dispatcher.php [L]
+        </IfModule>
+
+      If a file exists in the file system, that file will be served as is
+      through Apache.  If a file does not exist (or for everything else),
+      requests will be routed to the /dispatcher.php file (found in the
+      tiny api repository) and tiny api will take over.
+
+    - Inside of the tiny api repository is a file called dispatcher.php.
+      Either copy this file into your Apache document root or link to it.
+
+    - Restart Apache.
+
+REST API URL SCHEME
+-------------------
+    - https://[domain]/[version number]/[entity]{/accessor}
+
+      Examples:
+
+        https://your-domain.com/0.3/user
+        https://your-domain.com/1.0/user/public-profile
