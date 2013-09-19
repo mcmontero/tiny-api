@@ -34,11 +34,6 @@ class tiny_api_Base_Handler
 {
     function __construct() {}
 
-    // +------------------+
-    // | Abstract Methods |
-    // +------------------+
-
-
     // +----------------+
     // | Public Methods |
     // +----------------+
