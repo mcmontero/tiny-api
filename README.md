@@ -29,11 +29,31 @@ APACHE CONFIGURATION
 
     - Restart Apache.
 
+PHP CONFIGURATION
+-----------------
+
+    - Add the base directory for tiny api to your PHP include path in php.ini.
+
+      Examples:
+
+        include_path = "/path/to/tiny-api"
+        include_path = ".:/path1:/path/to/tiny-api"
+
+    - /path/to/tiny-api is the directory that contains the following
+      directories and files:
+
+        0.0/
+        base/
+        dispatcher.php
+        LICENSE
+        README.md
+        tiny-api-conf.php
+
 REST API URL SCHEME
 -------------------
     - https://[domain]/[version number]/[entity]{/accessor}
 
       Examples:
 
-        https://your-domain.com/0.3/user
-        https://your-domain.com/1.0/user/public-profile
+        https://api.your-domain.com/1.0/user
+        https://api.your-domain.com/1.1/user/public-profile

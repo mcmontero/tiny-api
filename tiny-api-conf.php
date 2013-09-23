@@ -27,7 +27,7 @@
 $__tiny_api_conf__ = array(
 
     // Defines the underlying data store into which all entities are stored.
-    'data store' => 'mysql',
+    'data store' => 'mysql (myisam)',
 
 );
 ?>

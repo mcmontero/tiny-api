@@ -21,6 +21,12 @@
  */
 
 // +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/data-store/provider.php';
+
+// +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
 
@@ -32,7 +38,12 @@
 
 class tiny_api_Base_Handler
 {
-    function __construct() {}
+    private $dsh;
+
+    function __construct()
+    {
+        $this->dsh = tiny_api_Data_Store_Provider::make()->get();
+    }
 
     // +----------------+
     // | Public Methods |
@@ -48,10 +59,25 @@ class tiny_api_Base_Handler
         $this->do_delete();
     }
 
+    /**
+     * Returns an associative array mapping the data store key name to the
+     * query string parameter name.
+     *
+     * Example:
+     *  return array(
+     *      'user_id' => 'id'
+     *  );
+     */
     public function delete_id() {}
+
     public function get() {}
     public function post() {}
     public function put() {}
+
+    /**
+     * Provides a step in the process of handling a request that allows you
+     * to perform application specific authentication.
+     */
     public function secure() {}
 
     // +-------------------+
