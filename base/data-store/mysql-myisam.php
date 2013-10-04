@@ -21,29 +21,33 @@
  */
 
 // +------------------------------------------------------------+
-// | INSTRUCTIONS                                               |
+// | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
 
-$__tiny_api_conf__ = array(
+//
+// +----------------------------------+
+// | tiny_api_Data_Store_Mysql_Myisam |
+// +----------------------------------+
+//
 
-    /**
-     * Defines the underlying data store into which all entities are stored.
-     *
-     * Supported values include:
-     *
-     *  mysql (myisam)
-     *      configure mysql.default_host, mysql.default_user, and
-     *      mysql.default_password in php.ini
-     */
-    'data store' =>
-        'mysql (myisam)',
+class tiny_api_Data_Store_Mysql_Myisam
+extends tiny_api_Base_Data_Store
+{
+    private $mysql;
 
-    /**
-     * Special case handling via redirect for favicon.ico requests that hit
-     * the tiny api dispatcher.  If this value is null, no redirection will
-     * occur.
-     */
-    'favicon.ico redirect url' =>
-        'http://google.com//images/google_favicon_128.png',
-);
+    function __construct()
+    {
+        parent::__construct();
+
+        /**
+         * By default the server, username and password will be extracted
+         * from the php.ini using the following configuration settings:
+         *
+         *  mysql.default_host
+         *  mysql.default_user
+         *  mysql.default_password
+         */
+        $this->mysql = mysql_pconnect();
+    }
+}
 ?>

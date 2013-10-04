@@ -25,6 +25,8 @@
 // +------------------------------------------------------------+
 
 require_once 'base/handler.php';
+require_once 'base/response.php';
+require_once 'tiny-api-conf.php';
 
 // +------------------------------------------------------------+
 // | INSTRUCTIONS                                               |
@@ -40,14 +42,29 @@ if (count($temp) < 2)
     error_log('URL scheme ('
               . $_SERVER[ 'REQUEST_URI' ]
               . ') is not that of tiny api');
+
+    http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
     exit(1);
 }
 
 @list($junk, $version, $entity, $accessor) = $temp;
 if (!preg_match('/^[0-9\.]+$/', $version))
 {
-    error_log("version number ($version) is incorrect");
-    exit(1);
+    if ($version == 'favicon.ico' &&
+        !is_null($__tiny_api_conf__[ 'favicon.ico redirect url' ]))
+    {
+        http_response_code(TINY_API_RESPONSE_MOVED_PERMANENTLY);
+        header('Location: '
+               . $__tiny_api_conf__[ 'favicon.ico redirect url'  ]);
+        exit(0);
+    }
+    else
+    {
+        error_log("version number ($version) is incorrect");
+
+        http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
+        exit(1);
+    }
 }
 
 //
@@ -55,7 +72,7 @@ if (!preg_match('/^[0-9\.]+$/', $version))
 //
 
 $include_file = "$version/$entity.php";
-$class_name   = "tiny_api_$entity" . '_handler';
+$class_name   = "tiny_api_$entity" . '_Handler';
 
 require_once $include_file;
 
@@ -65,6 +82,16 @@ require_once $include_file;
 
 $class    = new $class_name();
 $response = $class->execute();
-json_encode($response);
+
+if (!($response instanceof tiny_api_Base_Response))
+{
+    error_log('response not instance of tiny_api_Base_Response');
+
+    http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
+    exit(1);
+}
+
+http_response_code($response->get_code());
+json_encode($response->get_data());
 exit(0);
 ?>

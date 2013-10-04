@@ -33,5 +33,19 @@
 class tiny_api_User_Handler
 extends tiny_api_Base_Handler
 {
+    function __construct()
+    {
+        parent::__construct();
+    }
+
+    // +----------------+
+    // | Public Methods |
+    // +----------------+
+
+    final public function get(tiny_api_Base_Data_Store $dsh)
+    {
+        error_log('execution of ' . __METHOD__ . '() succeeded');
+        return new tiny_api_Response_Ok();
+    }
 }
 ?>

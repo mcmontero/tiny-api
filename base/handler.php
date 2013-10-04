@@ -42,7 +42,12 @@ class tiny_api_Base_Handler
 
     function __construct()
     {
-        $this->dsh = tiny_api_Data_Store_Provider::make()->get();
+        $this->dsh = tiny_api_Data_Store_Provider::make()
+                        ->get_data_store_handle();
+        if (is_null($this->dsh))
+        {
+            return new tiny_api_Response_Internal_Server_Error();
+        }
     }
 
     // +----------------+
@@ -51,53 +56,50 @@ class tiny_api_Base_Handler
 
     public function execute()
     {
-        $this->secure();
+        $this->secure($this->dsh);
+
+        if ($_SERVER[ 'REQUEST_METHOD' ] == 'DELETE')
+        {
+            return $this->delete($this->dsh);
+        }
+        else if ($_SERVER[ 'REQUEST_METHOD' ] == 'GET')
+        {
+            return $this->get($this->dsh);
+        }
+        else if ($_REQUEST[ 'REQUEST_METHOD' ] == 'POST')
+        {
+            return $this->post($this->dsh);
+        }
+        else if ($_REQUEST[ 'REQUEST_METHOD' ] == 'PUT')
+        {
+            return $this->put($this->dsh);
+        }
     }
 
-    public function delete()
+    public function delete(tiny_api_Base_Data_Store $dsh)
     {
-        $this->do_delete();
+        return new tiny_api_Response_Not_Implemented();
     }
 
-    /**
-     * Returns an associative array mapping the data store key name to the
-     * query string parameter name.
-     *
-     * Example:
-     *  return array(
-     *      'user_id' => 'id'
-     *  );
-     */
-    public function delete_id() {}
+    public function get(tiny_api_Base_Data_Store $dsh)
+    {
+        return new tiny_api_Response_Not_Implemented();
+    }
 
-    public function get() {}
-    public function post() {}
-    public function put() {}
+    public function post(tiny_api_Base_Data_Store $dsh)
+    {
+        return new tiny_api_Response_Not_Implemented();
+    }
+
+    public function put(tiny_api_Base_Data_Store $dsh)
+    {
+        return new tiny_api_Response_Not_Implemented();
+    }
 
     /**
      * Provides a step in the process of handling a request that allows you
      * to perform application specific authentication.
      */
-    public function secure() {}
-
-    // +-------------------+
-    // | Protected Methods |
-    // +-------------------+
-
-    final protected function do_delete()
-    {
-        $delete_id = $this->delete_id();
-        $delete    = array();
-        foreach ($delete_id as $db_col => $qs_param)
-        {
-            if (!isset($_REQUEST[ $qs_param ]))
-            {
-                error_log("could not find parameter ($qs_param) in request");
-                exit(1);
-            }
-
-            $delete[ $db_col ] = $_REQUEST[ $qs_param ];
-        }
-    }
+    public function secure(tiny_api_Base_Data_Store $dsh) {}
 }
 ?>

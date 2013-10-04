@@ -1,4 +1,5 @@
 <?php
+
 // +------------------------------------------------------------+
 // | LICENSE                                                    |
 // +------------------------------------------------------------+
@@ -32,12 +33,6 @@
 abstract class tiny_api_Base_Data_Store
 {
     function __construct() {}
-
-    // +------------------+
-    // | Abstract Methods |
-    // +------------------+
-
-    abstract public function delete();
 }
 
 //
@@ -53,7 +48,7 @@ class tiny_api_Data_Store_Provider
 
     function __construct()
     {
-        require_once 'tiny-api-conf.php';
+        global $__tiny_api_conf__;
         $this->tiny_api_conf = $__tiny_api_conf__;
     }
 
@@ -66,14 +61,14 @@ class tiny_api_Data_Store_Provider
     // | Public Methods |
     // +----------------+
 
-    final public function get()
+    final public function get_data_store_handle()
     {
         if ($this->tiny_api_conf[ 'data store' ] == 'mysql (myisam)')
         {
             if (is_null($this->dsh))
             {
                 require_once 'base/data-store/mysql-myisam.php';
-                $this->dsh = new tiny_api_Data_Store_Mysql();
+                $this->dsh = new tiny_api_Data_Store_Mysql_Myisam();
             }
 
             return $this->dsh;
@@ -83,6 +78,7 @@ class tiny_api_Data_Store_Provider
             error_log('Data store configured in tiny-api-conf.php ('
                       . $this->tiny_api_conf[ 'data store' ]
                       . ') is not presently supported');
+            return null;
         }
     }
 }
