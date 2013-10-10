@@ -60,7 +60,9 @@ if (!preg_match('/^[0-9\.]+$/', $version))
     }
     else
     {
-        error_log("version number ($version) is incorrect");
+        error_log('version number is incorrect ('
+                  . $_SERVER[ 'REQUEST_URI' ]
+                  . ')');
 
         http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
         exit(1);
