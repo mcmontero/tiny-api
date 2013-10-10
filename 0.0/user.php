@@ -36,16 +36,43 @@ extends tiny_api_Base_Handler
     function __construct()
     {
         parent::__construct();
+
+        $this->dsh->select_db('test');
     }
 
     // +----------------+
     // | Public Methods |
     // +----------------+
 
-    final public function get(tiny_api_Base_Data_Store $dsh)
+    final public function delete()
     {
-        error_log('execution of ' . __METHOD__ . '() succeeded');
-        return new tiny_api_Response_Ok();
+        return tiny_api_Response_Ok::make()
+                ->set_bool($this->dsh->delete('user', array('id = 1')));
+    }
+
+    final public function post()
+    {
+        return tiny_Api_Response_Ok::make()
+                ->set_bool($this->dsh->update('user',
+                                              array('name' => 'Sarah Montero'),
+                                              array('id = 3')));
+    }
+
+    final public function put()
+    {
+        return tiny_api_Response_Ok::make()
+                ->set_data(array('id' =>
+                                 $this->dsh->create(
+                                    'user',
+                                    array('name' => 'Michael Montero'))));
+    }
+
+    final public function get()
+    {
+        return tiny_Api_Response_Ok::make()
+                ->set_data($this->dsh->retrieve('user',
+                                                array('id', 'name'),
+                                                array('id = 1')));
     }
 }
 ?>

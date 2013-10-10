@@ -38,7 +38,7 @@ require_once 'base/data-store/provider.php';
 
 class tiny_api_Base_Handler
 {
-    private $dsh;
+    protected $dsh;
 
     function __construct()
     {
@@ -56,42 +56,42 @@ class tiny_api_Base_Handler
 
     public function execute()
     {
-        $this->secure($this->dsh);
+        $this->secure();
 
         if ($_SERVER[ 'REQUEST_METHOD' ] == 'DELETE')
         {
-            return $this->delete($this->dsh);
+            return $this->delete();
         }
         else if ($_SERVER[ 'REQUEST_METHOD' ] == 'GET')
         {
-            return $this->get($this->dsh);
+            return $this->get();
         }
-        else if ($_REQUEST[ 'REQUEST_METHOD' ] == 'POST')
+        else if ($_SERVER[ 'REQUEST_METHOD' ] == 'POST')
         {
-            return $this->post($this->dsh);
+            return $this->post();
         }
-        else if ($_REQUEST[ 'REQUEST_METHOD' ] == 'PUT')
+        else if ($_SERVER[ 'REQUEST_METHOD' ] == 'PUT')
         {
-            return $this->put($this->dsh);
+            return $this->put();
         }
     }
 
-    public function delete(tiny_api_Base_Data_Store $dsh)
+    public function delete()
     {
         return new tiny_api_Response_Not_Implemented();
     }
 
-    public function get(tiny_api_Base_Data_Store $dsh)
+    public function get()
     {
         return new tiny_api_Response_Not_Implemented();
     }
 
-    public function post(tiny_api_Base_Data_Store $dsh)
+    public function post()
     {
         return new tiny_api_Response_Not_Implemented();
     }
 
-    public function put(tiny_api_Base_Data_Store $dsh)
+    public function put()
     {
         return new tiny_api_Response_Not_Implemented();
     }
@@ -100,6 +100,6 @@ class tiny_api_Base_Handler
      * Provides a step in the process of handling a request that allows you
      * to perform application specific authentication.
      */
-    public function secure(tiny_api_Base_Data_Store $dsh) {}
+    public function secure() {}
 }
 ?>

@@ -81,6 +81,12 @@ class tiny_api_Base_Response
         return $this->data;
     }
 
+    final public function set_bool($bool)
+    {
+        $this->data = array('success' => ((bool)$bool ? 'true' : 'false'));
+        return $this;
+    }
+
     final public function set_data(array $data)
     {
         $this->data = $data;
@@ -104,6 +110,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_OK;
         $this->data = array('msg' => 'ok');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -121,6 +132,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_CREATED;
         $this->data = array('msg' => 'created');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -140,6 +156,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_ACCEPTED;
         $this->data = array('msg' => 'accepted');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -157,6 +178,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_NON_AUTH_INFO;
         $this->data = array('msg' => 'non-authoritative information');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -176,6 +202,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_NO_CONTENT;
         $this->data = array('msg' => 'no content');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -193,6 +224,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_RESET_CONTENT;
         $this->data = array('msg' => 'reset content');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -212,6 +248,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_PARTIAL_CONTENT;
         $this->data = array('msg' => 'partial content');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -229,6 +270,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_MOVED_PERMANENTLY;
         $this->data = array('msg' => 'moved permanently');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -248,6 +294,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_FOUND;
         $this->data = array('msg' => 'found');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -265,6 +316,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_NOT_MODIFIED;
         $this->data = array('msg' => 'not modified');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -284,6 +340,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_TEMP_REDIRECT;
         $this->data = array('msg' => 'temporary redirect');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -301,6 +362,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_BAD_REQUEST;
         $this->data = array('msg' => 'bad request');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -320,6 +386,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_UNAUTHORIZED;
         $this->data = array('msg' => 'unauthorized');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -337,6 +408,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_PAYMENT_REQUIRED;
         $this->data = array('msg' => 'payment required');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -356,6 +432,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_FORBIDDEN;
         $this->data = array('msg' => 'forbidden');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -373,6 +454,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_NOT_FOUND;
         $this->data = array('msg' => 'not found');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -392,6 +478,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_METHOD_NOT_ALLOWED;
         $this->data = array('msg' => 'method not allowed');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -409,6 +500,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_NOT_ACCEPTABLE;
         $this->data = array('msg' => 'not acceptable');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 
@@ -428,6 +524,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_INTERNAL_SERVER_ERROR;
         $this->data = array('msg' => 'internal server error');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -446,6 +547,11 @@ extends tiny_api_Base_Response
         $this->code = TINY_API_RESPONSE_NOT_IMPLEMENTED;
         $this->data = array('msg' => 'not implemented');
     }
+
+    static function make()
+    {
+        return new self();
+    }
 }
 
 //
@@ -463,6 +569,11 @@ extends tiny_api_Base_Response
 
         $this->code = TINY_API_RESPONSE_SERVICE_UNAVAILABLE;
         $this->data = array('msg' => 'service unavailable');
+    }
+
+    static function make()
+    {
+        return new self();
     }
 }
 ?>

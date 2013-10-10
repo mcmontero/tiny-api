@@ -39,9 +39,9 @@ require_once 'tiny-api-conf.php';
 @$temp = explode('/', $_SERVER[ 'REQUEST_URI' ]);
 if (count($temp) < 2)
 {
-    error_log('URL scheme ('
+    error_log('URL scheme ['
               . $_SERVER[ 'REQUEST_URI' ]
-              . ') is not that of tiny api');
+              . '] is not that of tiny api');
 
     http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
     exit(1);
@@ -60,9 +60,9 @@ if (!preg_match('/^[0-9\.]+$/', $version))
     }
     else
     {
-        error_log('version number is incorrect ('
+        error_log('version number ['
                   . $_SERVER[ 'REQUEST_URI' ]
-                  . ')');
+                  . '] is incorrect');
 
         http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
         exit(1);
@@ -94,6 +94,6 @@ if (!($response instanceof tiny_api_Base_Response))
 }
 
 http_response_code($response->get_code());
-json_encode($response->get_data());
+print json_encode($response->get_data());
 exit(0);
 ?>

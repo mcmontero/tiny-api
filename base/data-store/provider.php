@@ -25,12 +25,36 @@
 // +------------------------------------------------------------+
 
 //
+// +---------------------+
+// | tiny_api_Base_Rdbms |
+// +---------------------+
+//
+
+class tiny_api_Base_Rdbms
+extends tiny_api_Base_Data_Store
+{
+    function __construct()
+    {
+        parent::__construct();
+    }
+
+    // +----------------+
+    // | Public Methods |
+    // +----------------+
+
+    public function create(array $data) {}
+    public function delete(array $key) {}
+    public function retrieve(array $key, array $values) {}
+    public function update(array $key, array $values) {}
+}
+
+//
 // +--------------------------+
 // | tiny_api_Base_Data_Store |
 // +--------------------------+
 //
 
-abstract class tiny_api_Base_Data_Store
+class tiny_api_Base_Data_Store
 {
     function __construct() {}
 }
