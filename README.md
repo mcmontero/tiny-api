@@ -1,12 +1,21 @@
 The tiny api Project
 Copyright 2013 Michael C. Montero (mcmontero@gmail.com)
 
-GOAL
-----
+GOALS
+-----
 
-To provide a minimalist framework for developing REST based API's in PHP.  To
-automate as much functionality as possible for handling data interactions from
-the API end point to the data store.
+Primary
+=======
+   o To provide a minimalist framework for developing REST based API's in PHP.
+   o To automate as much functionality as possible for handling data
+     interactions from the API end point to the data store.
+
+Secondary
+=========
+   o To completely abstract away the data store layer and make switching
+     between data stores seamless.
+   o To abstract SQL to an intermediate, minimal "language".
+   o To automate the building of RDBMS objects.
 
 APACHE CONFIGURATION
 --------------------
