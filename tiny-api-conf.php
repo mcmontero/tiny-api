@@ -50,6 +50,10 @@ $__tiny_api_conf__ = array(
     'favicon.ico redirect url' =>
         'http://google.com//images/google_favicon_128.png',
 
+    /**
+     * The value provided here should match exactly what would normally
+     * be passed to the PHP function pg_pconnect().
+     */
     'postgresql connection string' =>
         'host=localhost port=5432 user=postgres password=abcd1234',
 );
