@@ -54,7 +54,7 @@ extends tiny_api_Base_Rdbms
     // | Public Methods |
     // +----------------+
 
-    final public function create($target, array $data)
+    final public function create($target, array $data, $return_insert_id = true)
     {
         if (empty($data))
         {
@@ -65,7 +65,7 @@ extends tiny_api_Base_Rdbms
         $vals = array_values($data);
 
         $query = "insert into $target ("
-                  .     implode(', ', $keys)
+                  .    implode(', ', $keys)
                   . ') '
                   . 'values ('
                   .    implode(', ', $this->escape_values($vals))
@@ -76,7 +76,7 @@ extends tiny_api_Base_Rdbms
             return null;
         }
 
-        return mysql_insert_id($this->mysql);
+        return ($return_insert_id ? mysql_insert_id($this->mysql) : '');
     }
 
     final public function delete($target, array $where)

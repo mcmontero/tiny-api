@@ -97,6 +97,16 @@ class tiny_api_Data_Store_Provider
 
             return $this->dsh;
         }
+        else if ($this->tiny_api_conf[ 'data store' ] == 'postgresql')
+        {
+            if (is_null($this->dsh))
+            {
+                require_once 'base/data-store/postgresql.php';
+                $this->dsh = new tiny_api_Data_Store_Postgresql();
+            }
+
+            return $this->dsh;
+        }
         else
         {
             error_log('Data store configured in tiny-api-conf.php ('

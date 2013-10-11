@@ -32,11 +32,15 @@ $__tiny_api_conf__ = array(
      * Supported values include:
      *
      *  mysql (myisam)
-     *      configure mysql.default_host, mysql.default_user, and
-     *      mysql.default_password in php.ini
+     *      configure "mysql.default_host", "mysql.default_user", and
+     *      "mysql.default_password" in php.ini
+     *
+     *  postgresql
+     *      configure "postgresql connection string" located in this file
      */
     'data store' =>
-        'mysql (myisam)',
+        //'mysql (myisam)',
+        'postgresql',
 
     /**
      * Special case handling via redirect for favicon.ico requests that hit
@@ -45,5 +49,8 @@ $__tiny_api_conf__ = array(
      */
     'favicon.ico redirect url' =>
         'http://google.com//images/google_favicon_128.png',
+
+    'postgresql connection string' =>
+        'host=localhost port=5432 user=postgres password=abcd1234',
 );
 ?>
