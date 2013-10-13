@@ -42,10 +42,35 @@ extends tiny_api_Base_Data_Store
     // | Public Methods |
     // +----------------+
 
-    public function create(array $data) {}
-    public function delete(array $key) {}
-    public function retrieve(array $key, array $values) {}
-    public function update(array $key, array $values) {}
+    public function create($target,
+                           array $data,
+                           $return_insert_id = true)
+    {
+        return ($return_insert_id ? '' : null);
+    }
+
+    public function delete($target,
+                           array $where,
+                           array $binds = array())
+    {
+        return false;
+    }
+
+    public function retrieve($target,
+                             array $cols,
+                             array $where = null,
+                             array $binds = array())
+    {
+        return null;
+    }
+
+    public function update($target,
+                           array $data,
+                           array $where = null,
+                           array $binds = array())
+    {
+        return false;
+    }
 }
 
 //

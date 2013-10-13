@@ -65,18 +65,11 @@ extends tiny_api_Base_Rdbms
                  .    implode(', ', $binds)
                  . ')'
                  . ($return_insert_id ? 'returning id' : '');
-        $statement_name = md5($query);
+        $statement_name = sha1($query);
 
-        if (($dsr =
-                @pg_prepare($this->postgresql, $statement_name, $query))
-            === false)
+        if (is_null(($dsr = $this->prepare($statement_name, $query))))
         {
-            $last_error = pg_last_error($this->postgresql);
-            if (!preg_match('/already exists/', $last_error))
-            {
-                error_log(pg_result_error($dsr));
-                return null;
-            }
+            return null;
         }
 
         if (($dsr =
@@ -100,7 +93,7 @@ extends tiny_api_Base_Rdbms
         }
     }
 
-    final public function delete($target, array $where)
+    final public function delete($target, array $where, array $binds = array())
     {
         if (empty($where))
         {
@@ -111,7 +104,16 @@ extends tiny_api_Base_Rdbms
 
         $query = "delete from $target "
                  . 'where ' . implode(' and ', $where);
-        if (($dsr = pg_query($this->postgresql, $query)) === false)
+        $statement_name = sha1($query);
+
+        if (is_null(($dsr = $this->prepare($statement_name, $query))))
+        {
+            return false;
+        }
+
+        if (($dsr =
+                pg_execute($this->postgresql, $statement_name, $binds))
+            === false)
         {
             error_log(pg_result_error($dsr));
             return false;
@@ -120,7 +122,10 @@ extends tiny_api_Base_Rdbms
         return true;
     }
 
-    final public function retrieve($target, array $cols, array $where = null)
+    final public function retrieve($target,
+                                   array $cols,
+                                   array $where = null,
+                                   array $binds = array())
     {
         if (empty($cols))
         {
@@ -136,7 +141,16 @@ extends tiny_api_Base_Rdbms
             $query .= ' where ' . implode(' and ', $where);
         }
 
-        if (($dsr = pg_query($this->postgresql, $query)) === false)
+        $statement_name = sha1($query);
+
+        if (is_null(($dsr = $this->prepare($statement_name, $query))))
+        {
+            return null;
+        }
+
+        if (($dsr =
+                pg_execute($this->postgresql, $statement_name, $binds))
+            === false)
         {
             error_log(pg_result_error($dsr));
             return null;
@@ -154,7 +168,10 @@ extends tiny_api_Base_Rdbms
         return $this;
     }
 
-    final public function update($target, array $data, array $where = null)
+    final public function update($target,
+                                 array $data,
+                                 array $where = null,
+                                 array $binds = array())
     {
         if (empty($data))
         {
@@ -163,38 +180,23 @@ extends tiny_api_Base_Rdbms
 
         $this->connect();
 
-        $keys     = array_keys($data);
-        $num_keys = count($keys);
-        $vals     = array_values($data);
-
         $query = "update $target "
-                 .  'set';
-        for ($i = 0; $i < $num_keys; $i++)
-        {
-            $query .= ' ' . $keys[ $i ] . ' = ' . "\$" . ($i + 1);
-        }
-
+                 .  'set '
+                 . implode(', ', $data);
         if (!is_null($where))
         {
             $query .= ' where ' . implode(' and ', $where);
         }
 
-        $statement_name = md5($query);
+        $statement_name = sha1($query);
 
-        if (($dsr =
-                @pg_prepare($this->postgresql, $statement_name, $query))
-            === false)
+        if (is_null(($dsr = $this->prepare($statement_name, $query))))
         {
-            $last_error = pg_last_error($this->postgresql);
-            if (!preg_match('/already exists/', $last_error))
-            {
-                error_log(pg_result_error($dsr));
-                return null;
-            }
+            return false;
         }
 
         if (($dsr =
-                pg_execute($this->postgresql, $statement_name, $vals))
+                pg_execute($this->postgresql, $statement_name, $binds))
             === false)
         {
             error_log(pg_result_error($dsr));
@@ -224,9 +226,14 @@ extends tiny_api_Base_Rdbms
             return null;
         }
 
-        $this->postgresql =
-            pg_pconnect($__tiny_api_conf__[ 'postgresql connection string' ]
-                        . ' dbname=' . $this->db_name);
+        if (($this->postgresql =
+                pg_pconnect($__tiny_api_conf__[ 'postgresql connection string' ]
+                            . ' dbname=' . $this->db_name))
+            === false)
+        {
+            error_log(pg_last_error());
+        }
+
         return $this->postgresql;
     }
 
@@ -256,6 +263,23 @@ extends tiny_api_Base_Rdbms
         }
 
         return $binds;
+    }
+
+    private function prepare($statement_name, $query)
+    {
+        if (($dsr =
+                @pg_prepare($this->postgresql, $statement_name, $query))
+            === false)
+        {
+            $last_error = pg_last_error($this->postgresql);
+            if (!preg_match('/already exists/', $last_error))
+            {
+                error_log(pg_result_error($dsr));
+                return null;
+            }
+        }
+
+        return $dsr;
     }
 }
 ?>

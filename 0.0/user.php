@@ -47,15 +47,18 @@ extends tiny_api_Base_Handler
     final public function delete()
     {
         return tiny_api_Response_Ok::make()
-                ->set_bool($this->dsh->delete('user_info', array('id = 1')));
+                ->set_bool($this->dsh->delete('user_info',
+                                              array('id = ?'),
+                                              array(1)));
     }
 
     final public function post()
     {
         return tiny_Api_Response_Ok::make()
                 ->set_bool($this->dsh->update('user_info',
-                                              array('name' => 'Sarah Montero'),
-                                              array('id = 3')));
+                                              array('name = ?'),
+                                              array('id = ?'),
+                                              array('Sarah Montero', 3)));
     }
 
     final public function put()
@@ -72,7 +75,8 @@ extends tiny_api_Base_Handler
         return tiny_Api_Response_Ok::make()
                 ->set_data($this->dsh->retrieve('user_info',
                                                 array('id', 'name'),
-                                                array('id = 1')));
+                                                array('id = ?'),
+                                                array(1)));
     }
 }
 ?>

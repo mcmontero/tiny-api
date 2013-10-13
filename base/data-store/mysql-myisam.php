@@ -39,15 +39,13 @@ extends tiny_api_Base_Rdbms
     {
         parent::__construct();
 
-        /**
-         * By default the server, username and password will be extracted
-         * from the php.ini using the following configuration settings:
-         *
-         *  mysql.default_host
-         *  mysql.default_user
-         *  mysql.default_password
-         */
-        $this->mysql = mysql_pconnect();
+        $this->mysql = new mysqli(ini_get("mysqli.default_host"),
+                                  ini_get("mysqli.default_user"),
+                                  ini_get("mysqli.default_pw"));
+        if ($this->mysql->connect_error)
+        {
+            error_log($this->mysql->connect_error);
+        }
     }
 
     // +----------------+
@@ -61,25 +59,37 @@ extends tiny_api_Base_Rdbms
             return null;
         }
 
-        $keys = array_keys($data);
-        $vals = array_values($data);
+        $keys  = array_keys($data);
+        $binds = $this->get_binds($keys);
+        $vals  = array_values($data);
 
         $query = "insert into $target ("
                   .    implode(', ', $keys)
                   . ') '
                   . 'values ('
-                  .    implode(', ', $this->escape_values($vals))
+                  .    implode(', ', $binds)
                   . ')';
-        if (mysql_query($query, $this->mysql) === false)
+
+        if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log(mysql_error($this->mysql));
+            error_log($this->mysql->error);
             return null;
         }
 
-        return ($return_insert_id ? mysql_insert_id($this->mysql) : '');
+        $this->bind($dss, $vals);
+
+        if ($dss->execute() === false)
+        {
+            error_log($dss->error);
+            return null;
+        }
+
+        $dss->free_result();
+
+        return ($return_insert_id ? $this->mysql->insert_id : '');
     }
 
-    final public function delete($target, array $where)
+    final public function delete($target, array $where, array $binds = array())
     {
         if (empty($where))
         {
@@ -88,16 +98,30 @@ extends tiny_api_Base_Rdbms
 
         $query = "delete from $target "
                  . 'where ' . implode(' and ', $where);
-        if (mysql_query($query, $this->mysql) === false)
+
+        if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log(mysql_error($this->mysql));
+            error_log($this->mysql->error);
             return false;
         }
+
+        $this->bind($dss, $binds);
+
+        if ($dss->execute() === false)
+        {
+            error_log($this->error);
+            return false;
+        }
+
+        $dss->free_result();
 
         return true;
     }
 
-    final public function retrieve($target, array $cols, array $where = null)
+    final public function retrieve($target,
+                                   array $cols,
+                                   array $where = null,
+                                   array $binds = array())
     {
         if (empty($cols))
         {
@@ -111,21 +135,29 @@ extends tiny_api_Base_Rdbms
             $query .= ' where ' . implode(' and ', $where);
         }
 
-        if (($dsr = mysql_query($query, $this->mysql)) === false)
+        if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log(mysql_error($this->mysql));
+            error_log($this->mysql->error);
             return null;
         }
 
-        $results = $this->fetch_all_assoc($dsr);
-        mysql_free_result($dsr);
+        $this->bind($dss, $binds);
+
+        if ($dss->execute() === false)
+        {
+            error_log($dss->error);
+            return null;
+        }
+
+        $results = $this->fetch_all_assoc($dss);
+        $dss->free_result();
 
         return $results;
     }
 
     final public function select_db($name)
     {
-        if (mysql_select_db($name, $this->mysql) === false)
+        if ($this->mysql->select_db($name) === false)
         {
             error_log(mysql_error($this->mysql));
             return null;
@@ -134,31 +166,39 @@ extends tiny_api_Base_Rdbms
         return $this;
     }
 
-    final public function update($target, array $data, array $where = null)
+    final public function update($target,
+                                 array $data,
+                                 array $where = null,
+                                 array $binds = array())
     {
         if (empty($data))
         {
             return false;
         }
 
-        $set = array();
-        foreach ($data as $key => $value)
-        {
-            $set[] = "$key = " . $this->escape_value($value);
-        }
-
         $query = "update $target "
-                 .  'set ' . implode(', ', $set);
+                 .  'set '
+                 . implode(', ', $data);
         if (!is_null($where))
         {
-            $query .= 'where ' . implode(' and ', $where);
+            $query .= ' where ' . implode(' and ', $where);
         }
 
-        if (mysql_query($query, $this->mysql) === false)
+        if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log(mysql_error($this->mysql));
+            error_log($this->mysql->error);
             return false;
         }
+
+        $this->bind($dss, $binds);
+
+        if ($dss->execute() === false)
+        {
+            error_log($dss->error);
+            return false;
+        }
+
+        $dss->free_result();
 
         return true;
     }
@@ -167,33 +207,99 @@ extends tiny_api_Base_Rdbms
     // | Private Methods |
     // +-----------------+
 
-    private function escape_value($value)
+    private function bind($dss, array $binds)
     {
-        return current($this->escape_values(array($value)));
-    }
-
-    private function escape_values(array $values)
-    {
-        $num_values = count($values);
-        for ($i = 0; $i < $num_values; $i++)
+        if (empty($binds))
         {
-            $values[ $i ] = '\''
-                            . mysql_real_escape_string($values[ $i ])
-                            . '\'';
+            return false;
         }
 
-        return $values;
+        $num_binds = count($binds);
+        $types     = '';
+        $vals      = array();
+        for ($i = 0; $i < $num_binds; $i++)
+        {
+            if (is_string($binds[ $i ]))
+            {
+                $types .= 's';
+            }
+            else if (is_int($binds[ $i ]))
+            {
+                $types .= 'i';
+            }
+            else if (is_float($binds[ $i ]))
+            {
+                $types .= 'd';
+            }
+            else
+            {
+                $types .= 's';
+            }
+
+            $vals[] = &$binds[ $i ];
+        }
+
+        call_user_func_array(array($dss, 'bind_param'),
+                             array_merge(array($types), $vals));
+
+        return true;
     }
 
-    private function fetch_all_assoc($dsr)
+    private function fetch_all_assoc($dss)
     {
-        $results = array();
-        while(($result = mysql_fetch_assoc($dsr)) !== false)
+        if ($dss->store_result() === false)
         {
-            $results[] = $result;
+            error_log($dss->error);
+            return null;
+        }
+
+        $vars = array();
+        $data = array();
+
+        if (($meta = $dss->result_metadata()) === false)
+        {
+            error_log($dss->error);
+            return null;
+        }
+
+        while (($field = $meta->fetch_field()) !== false)
+        {
+            $vars[] = &$data[ $field->name ];
+        }
+
+        call_user_func_array(array($dss, 'bind_result'), $vars);
+
+        $results = array();
+        $i       = 0;
+        while ($dss->fetch() === true)
+        {
+            $results[ $i ] = array();
+
+            foreach ($data as $key => $val)
+            {
+                $results[ $i ][ $key ] = $val;
+            }
+
+            $i++;
         }
 
         return $results;
+    }
+
+    private function get_binds($keys)
+    {
+        if (empty($keys))
+        {
+            return array();
+        }
+
+        $binds = array();
+        foreach ($keys as $junk)
+        {
+            $binds[] = '?';
+        }
+
+        return $binds;
     }
 }
 ?>

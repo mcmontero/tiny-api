@@ -39,8 +39,8 @@ $__tiny_api_conf__ = array(
      *      configure "postgresql connection string" located in this file
      */
     'data store' =>
-        //'mysql (myisam)',
-        'postgresql',
+        'mysql (myisam)',
+        //'postgresql',
 
     /**
      * Special case handling via redirect for favicon.ico requests that hit
