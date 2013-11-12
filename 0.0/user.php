@@ -46,19 +46,23 @@ extends tiny_api_Base_Handler
 
     final public function delete()
     {
-        return tiny_api_Response_Ok::make()
-                ->set_bool($this->dsh->delete('user_info',
-                                              array('id = ?'),
-                                              array(1)));
+        $bool =
+            $this->dsh->memcache('user_info_cache_key')
+                      ->delete('user_info', array('id = ?'), array(1));
+
+        return tiny_api_Response_Ok::make()->set_bool($bool);
     }
 
     final public function post()
     {
-        return tiny_Api_Response_Ok::make()
-                ->set_bool($this->dsh->update('user_info',
-                                              array('name = ?'),
-                                              array('id = ?'),
-                                              array('Sarah Montero', 3)));
+        $bool =
+            $this->dsh->memcache('user_info_cache_key')
+                      ->update('user_info',
+                               array('name = ?'),
+                               array('id = ?'),
+                               array('Sarah Montero', 3));
+
+        return tiny_Api_Response_Ok::make()->set_bool($bool);
     }
 
     final public function put()
@@ -72,11 +76,13 @@ extends tiny_api_Base_Handler
 
     final public function get()
     {
-        return tiny_Api_Response_Ok::make()
-                ->set_data($this->dsh->retrieve('user_info',
-                                                array('id', 'name'),
-                                                array('id = ?'),
-                                                array(1)));
+        $data = $this->dsh->memcache('user_info_cache_key')
+                          ->retrieve('user_info',
+                                     array('id', 'name'),
+                                     array('id = ?'),
+                                     array(1));
+
+        return tiny_Api_Response_Ok::make()->set_data($data);
     }
 }
 ?>

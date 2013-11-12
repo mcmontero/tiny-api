@@ -119,6 +119,8 @@ extends tiny_api_Base_Rdbms
             return false;
         }
 
+        $this->memcache_purge();
+
         return true;
     }
 
@@ -130,6 +132,11 @@ extends tiny_api_Base_Rdbms
         if (empty($cols))
         {
             return null;
+        }
+
+        if (!is_null(($results_from_cache = $this->memcache_retrieve())))
+        {
+            return $results_from_cache;
         }
 
         $this->connect();
@@ -158,6 +165,8 @@ extends tiny_api_Base_Rdbms
 
         $results = $this->fetch_all_assoc($dsr);
         pg_free_result($dsr);
+
+        $this->memcache_store($results);
 
         return $results;
     }
@@ -202,6 +211,8 @@ extends tiny_api_Base_Rdbms
             error_log(pg_result_error($dsr));
             return false;
         }
+
+        $this->memcache_purge();
 
         return true;
     }

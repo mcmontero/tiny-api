@@ -21,6 +21,12 @@
  */
 
 // +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/data-store/memcache.php';
+
+// +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
 
@@ -33,6 +39,9 @@
 class tiny_api_Base_Rdbms
 extends tiny_api_Base_Data_Store
 {
+    private $memcache_key;
+    private $memcache_ttl;
+
     function __construct()
     {
         parent::__construct();
@@ -56,6 +65,13 @@ extends tiny_api_Base_Data_Store
         return false;
     }
 
+    final public function memcache($key, $ttl = 0)
+    {
+        $this->memcache_key = $key;
+        $this->memcache_ttl = $ttl;
+        return $this;
+    }
+
     public function retrieve($target,
                              array $cols,
                              array $where = null,
@@ -70,6 +86,45 @@ extends tiny_api_Base_Data_Store
                            array $binds = array())
     {
         return false;
+    }
+
+    // +-------------------+
+    // | Protected Methods |
+    // +-------------------+
+
+    final protected function memcache_purge()
+    {
+        if (empty($this->memcache_key))
+        {
+            return false;
+        }
+
+        tiny_api_Memcache_Manager::get_instance()->purge($this->memcache_key);
+        return $this;
+    }
+
+    final protected function memcache_retrieve()
+    {
+        if (empty($this->memcache_key))
+        {
+            return null;
+        }
+
+        return tiny_api_Memcache_Manager::get_instance()
+                ->retrieve($this->memcache_key);
+    }
+
+    final protected function memcache_store($data)
+    {
+        if (empty($this->memcache_key))
+        {
+            return false;
+        }
+
+        tiny_api_Memcache_Manager::get_instance()
+            ->store($this->memcache_key, $data, $this->memcache_ttl);
+
+        return $this;
     }
 }
 

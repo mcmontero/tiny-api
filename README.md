@@ -20,6 +20,7 @@ GOALS
 
 APACHE CONFIGURATION
 ====================
+
     - Add the following rewrite rule into your Apache configuration:
 
         <IfModule mod_rewrite.c>
@@ -61,6 +62,7 @@ PHP CONFIGURATION
 
 REST API URL SCHEME
 ===================
+
     - https://[domain]/[version number]/[entity]{/accessor}
 
       Examples:

@@ -51,10 +51,23 @@ $__tiny_api_conf__ = array(
         'http://google.com//images/google_favicon_128.png',
 
     /**
+     * An array of Memcached servers to use for caching.  The array should
+     * be in the following format:
+     *
+     *  array('[IP address 1]:[Port 1]',
+     *        '[IP address 2]:[Port 2]',
+     *        ...
+     *        '[IP address N]:[Port N])
+     */
+    'memcached servers' =>
+        array('127.0.0.1:11211'),
+
+    /**
      * The value provided here should match exactly what would normally
      * be passed to the PHP function pg_pconnect().
      */
     'postgresql connection string' =>
         'host=localhost port=5432 user=postgres password=abcd1234',
+
 );
 ?>
