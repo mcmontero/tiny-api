@@ -142,7 +142,7 @@ extends tiny_api_Base_Rdbms
         }
 
         $results = $this->fetch_all_assoc($dss);
-        $dss->free_results();
+        $dss->free_result();
 
         $this->memcache_store($results);
 
