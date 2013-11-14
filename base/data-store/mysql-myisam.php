@@ -135,7 +135,7 @@ extends tiny_api_Base_Rdbms
 
         $this->bind($dss, $binds);
 
-        if ($dds->execute() === false)
+        if ($dss->execute() === false)
         {
             error_log($dss->error);
             return null;
