@@ -72,6 +72,11 @@ extends tiny_api_Base_Data_Store
         return $this;
     }
 
+    public function query($query, $binds = array())
+    {
+        return null;
+    }
+
     public function retrieve($target,
                              array $cols,
                              array $where = null,

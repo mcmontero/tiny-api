@@ -119,6 +119,36 @@ extends tiny_api_Base_Rdbms
         return true;
     }
 
+    final public function query($caller, $query, $binds = array())
+    {
+        if (!is_null(($results_from_cache = $this->memcache_retrieve())))
+        {
+            return $results_from_cache;
+        }
+
+        $query = "/* $caller */ $query";
+        if (($dss = $this->mysql->prepare($query)) === false)
+        {
+            error_log($this->mysql->error);
+            return null;
+        }
+
+        $this->bind($dss, $binds);
+
+        if ($dds->execute() === false)
+        {
+            error_log($dss->error);
+            return null;
+        }
+
+        $results = $this->fetch_all_assoc($dss);
+        $dss->free_results();
+
+        $this->memcache_store($results);
+
+        return $results;
+    }
+
     final public function retrieve($target,
                                    array $cols,
                                    array $where = null,
