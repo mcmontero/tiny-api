@@ -25,9 +25,8 @@ APACHE CONFIGURATION
 
         <IfModule mod_rewrite.c>
             RewriteEngine On
-            RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_FILENAME} -f
-                RewriteRule .* - [L]
-            RewriteRule .* /dispatcher.php [L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteRule . dispatcher.php [L]
         </IfModule>
 
       If a file exists in the file system, that file will be served as is
