@@ -24,8 +24,6 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/handler.php';
-require_once 'base/response.php';
 require_once 'tiny-api-conf.php';
 
 // +------------------------------------------------------------+
