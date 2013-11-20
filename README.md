@@ -59,6 +59,13 @@ PHP CONFIGURATION
         LICENSE
         README.md
 
+    - The tiny-api-conf.php file (an example of which is provided in conf/)
+      must be loaded in order for things to function properly.  This can
+      occur either by adding the path to your version of the configuration file
+      to the auto_prepend_file directive in php.ini or by including it in
+      another file that is loaded prior to the tiny api functionality being
+      executed.
+
 REST API URL SCHEME
 ===================
 
