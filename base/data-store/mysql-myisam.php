@@ -197,7 +197,7 @@ extends tiny_api_Base_Rdbms
     {
         if ($this->mysql->select_db($name) === false)
         {
-            error_log("could not select DB \"name\"");
+            error_log("could not select DB \"$name\"");
             return null;
         }
 
