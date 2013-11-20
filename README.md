@@ -54,10 +54,10 @@ PHP CONFIGURATION
 
         0.0/
         base/
+        conf/
         dispatcher.php
         LICENSE
         README.md
-        tiny-api-conf.php
 
 REST API URL SCHEME
 ===================
