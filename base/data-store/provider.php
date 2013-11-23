@@ -194,10 +194,10 @@ class tiny_api_Data_Store_Provider
         }
         else
         {
-            error_log('Data store configured in tiny-api-conf.php ('
-                      . $this->tiny_api_conf[ 'data store' ]
-                      . ') is not presently supported');
-            return null;
+            throw new tiny_Api_Data_Store_Exception(
+                        'data store configured in tiny-api-conf.php ('
+                        . $this->tiny_api_conf[ 'data store' ]
+                        . ') is not presently supported');
         }
     }
 }

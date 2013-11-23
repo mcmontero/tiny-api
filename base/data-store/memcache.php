@@ -53,9 +53,9 @@ class tiny_api_Memcache_Manager
 
         if (empty($__tiny_api_conf__[ 'memcached servers' ]))
         {
-            error_log(__CLASS__ . ' cannot be instantiated because no servers '
-                      . 'were provided');
-            return null;
+            throw new tiny_Api_Data_Store_Exception(
+                        __CLASS__ . ' cannot be instantiated because no '
+                        . 'servers were provided');
         }
 
         foreach ($__tiny_api_conf__[ 'memcached servers' ] as $server)
@@ -108,7 +108,8 @@ class tiny_api_Memcache_Manager
                                 $ttl) === false ||
             !empty($php_errormsg))
         {
-            error_log('attempt to store a value to Memcached failed');
+            throw new tiny_Api_Data_Store_Exception(
+                        'attempt to store a value to Memcached failed');
         }
 
         return $this;

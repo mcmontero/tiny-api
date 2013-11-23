@@ -353,7 +353,7 @@ extends tiny_api_Base_Response
 // +-------------------------------+
 //
 
-class tiny_api_Response_Base_Request
+class tiny_api_Response_Bad_Request
 extends tiny_api_Base_Response
 {
     function __construct()

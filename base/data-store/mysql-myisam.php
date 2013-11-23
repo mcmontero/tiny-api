@@ -44,7 +44,8 @@ extends tiny_api_Base_Rdbms
                                   ini_get("mysqli.default_pw"));
         if ($this->mysql->connect_error)
         {
-            error_log($this->mysql->connect_error);
+            throw new tiny_Api_Data_Store_Exception(
+                        $this->mysql->connect_error);
         }
     }
 
@@ -72,16 +73,14 @@ extends tiny_api_Base_Rdbms
 
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log($this->mysql->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         $this->bind($dss, $vals);
 
         if ($dss->execute() === false)
         {
-            error_log($dss->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         $dss->free_result();
@@ -101,16 +100,14 @@ extends tiny_api_Base_Rdbms
 
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log($this->mysql->error);
-            return false;
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         $this->bind($dss, $binds);
 
         if ($dss->execute() === false)
         {
-            error_log($this->error);
-            return false;
+            throw new tiny_Api_Data_Store_Exception($this->error);
         }
 
         $dss->free_result();
@@ -129,16 +126,14 @@ extends tiny_api_Base_Rdbms
         $query = "/* $caller */ $query";
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log($this->mysql->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         $this->bind($dss, $binds);
 
         if ($dss->execute() === false)
         {
-            error_log($dss->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         $results = $this->fetch_all_assoc($dss);
@@ -173,16 +168,14 @@ extends tiny_api_Base_Rdbms
 
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log($this->mysql->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         $this->bind($dss, $binds);
 
         if ($dss->execute() === false)
         {
-            error_log($dss->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         $results = $this->fetch_all_assoc($dss);
@@ -197,8 +190,8 @@ extends tiny_api_Base_Rdbms
     {
         if ($this->mysql->select_db($name) === false)
         {
-            error_log("could not select DB \"$name\"");
-            return null;
+            throw new tiny_Api_Data_Store_Exception(
+                        "could not select DB \"$name\"");
         }
 
         return $this;
@@ -224,16 +217,14 @@ extends tiny_api_Base_Rdbms
 
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            error_log($this->mysql->error);
-            return false;
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         $this->bind($dss, $binds);
 
         if ($dss->execute() === false)
         {
-            error_log($dss->error);
-            return false;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         $dss->free_result();
@@ -288,8 +279,7 @@ extends tiny_api_Base_Rdbms
     {
         if ($dss->store_result() === false)
         {
-            error_log($dss->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         $vars = array();
@@ -297,8 +287,7 @@ extends tiny_api_Base_Rdbms
 
         if (($meta = $dss->result_metadata()) === false)
         {
-            error_log($dss->error);
-            return null;
+            throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
         while (($field = $meta->fetch_field()) !== false)

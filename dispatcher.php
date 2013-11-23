@@ -28,12 +28,13 @@
 // Perform superficial request verification.
 //
 
-@$temp = explode('/', $_SERVER[ 'REQUEST_URI' ]);
+@$temp = explode('/', $_SERVER[ 'SCRIPT_URL' ]);
 if (count($temp) < 2)
 {
-    error_log('URL scheme ['
-              . $_SERVER[ 'REQUEST_URI' ]
-              . '] is not that of tiny api');
+    error_log(tiny_api_Dispatcher_Exception(
+                'URL scheme ['
+                . $_SERVER[ 'SCRIPT_URL' ]
+                . '] is not that of tiny api'));
 
     http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
     exit(1);
@@ -52,9 +53,10 @@ if (!preg_match('/^[0-9\.]+$/', $version))
     }
     else
     {
-        error_log('version number ['
-                  . $_SERVER[ 'REQUEST_URI' ]
-                  . '] is incorrect');
+        error_log(new tiny_api_Dispatcher_Exception(
+                        'version number ['
+                        . $_SERVER[ 'SCRIPT_URL' ]
+                        . '] is incorrect'));
 
         http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
         exit(1);
@@ -75,11 +77,13 @@ require_once $include_file;
 //
 
 $class    = new $class_name();
-$response = $class->execute();
+$response = $class->execute($accessor);
 
 if (!($response instanceof tiny_api_Base_Response))
 {
-    error_log('response not instance of tiny_api_Base_Response');
+    error_log(
+        new tiny_api_Dispatcher_Exception(
+                'response not instance of tiny_api_Base_Response'));
 
     http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
     exit(1);

@@ -54,26 +54,33 @@ class tiny_api_Base_Handler
     // | Public Methods |
     // +----------------+
 
-    public function execute()
+    public function execute($accessor = '')
     {
         $this->secure();
 
         if ($_SERVER[ 'REQUEST_METHOD' ] == 'DELETE')
         {
-            return $this->delete();
+            $func = 'delete';
         }
         else if ($_SERVER[ 'REQUEST_METHOD' ] == 'GET')
         {
-            return $this->get();
+            $func = 'get';
         }
         else if ($_SERVER[ 'REQUEST_METHOD' ] == 'POST')
         {
-            return $this->post();
+            $func = 'post';
         }
         else if ($_SERVER[ 'REQUEST_METHOD' ] == 'PUT')
         {
-            return $this->put();
+            $func = 'put';
         }
+
+        if (!empty($accessor))
+        {
+            $func .= "_$accessor";
+        }
+
+        return $this->$func();
     }
 
     public function delete()

@@ -76,8 +76,7 @@ extends tiny_api_Base_Rdbms
                 pg_execute($this->postgresql, $statement_name, $vals))
             === false)
         {
-            error_log(pg_result_error($dsr));
-            return null;
+            throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
         }
 
         if ($return_insert_id)
@@ -115,8 +114,7 @@ extends tiny_api_Base_Rdbms
                 pg_execute($this->postgresql, $statement_name, $binds))
             === false)
         {
-            error_log(pg_result_error($dsr));
-            return false;
+            throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
         }
 
         $this->memcache_purge();
@@ -159,8 +157,7 @@ extends tiny_api_Base_Rdbms
                 pg_execute($this->postgresql, $statement_name, $binds))
             === false)
         {
-            error_log(pg_result_error($dsr));
-            return null;
+            throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
         }
 
         $results = $this->fetch_all_assoc($dsr);
@@ -208,8 +205,7 @@ extends tiny_api_Base_Rdbms
                 pg_execute($this->postgresql, $statement_name, $binds))
             === false)
         {
-            error_log(pg_result_error($dsr));
-            return false;
+            throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
         }
 
         $this->memcache_purge();
@@ -232,9 +228,9 @@ extends tiny_api_Base_Rdbms
 
         if (is_null($this->db_name))
         {
-            error_log('cannot connect PostgreSQL because no database was '
-                      . 'selected');
-            return null;
+            throw new tiny_Api_Data_Store_Exception(
+                        'cannot connect PostgreSQL because no database was '
+                        . 'selected');
         }
 
         if (($this->postgresql =
@@ -242,7 +238,7 @@ extends tiny_api_Base_Rdbms
                             . ' dbname=' . $this->db_name))
             === false)
         {
-            error_log(pg_last_error());
+            throw new tiny_Api_Data_Store_Exception(pg_last_error());
         }
 
         return $this->postgresql;
@@ -285,7 +281,7 @@ extends tiny_api_Base_Rdbms
             $last_error = pg_last_error($this->postgresql);
             if (!preg_match('/already exists/', $last_error))
             {
-                error_log(pg_result_error($dsr));
+                throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
                 return null;
             }
         }
