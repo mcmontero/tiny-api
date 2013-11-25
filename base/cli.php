@@ -242,6 +242,8 @@ class tiny_api_Cli
 
     function __construct(tiny_api_Cli_Conf $conf)
     {
+        $this->configure_php_for_cli();
+
         $this->status_id     = self::STATUS_OK;
         $this->conf          = $conf;
         $this->started       = time();
@@ -352,6 +354,12 @@ class tiny_api_Cli
     // +-----------------+
     // | Private Methods |
     // +-----------------+
+
+    private function configure_php_for_cli()
+    {
+        ini_set('display_errors', 1);
+        ini_set('display_startup_errors', 1);
+    }
 
     private function pid_lock()
     {
