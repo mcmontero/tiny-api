@@ -31,10 +31,10 @@
 @$temp = explode('/', $_SERVER[ 'SCRIPT_URL' ]);
 if (count($temp) < 2)
 {
-    error_log(tiny_api_Dispatcher_Exception(
-                'URL scheme ['
-                . $_SERVER[ 'SCRIPT_URL' ]
-                . '] is not that of tiny api'));
+    error_log(new tiny_api_Dispatcher_Exception(
+                    'URL scheme ['
+                    . $_SERVER[ 'SCRIPT_URL' ]
+                    . '] is not that of tiny api'));
 
     http_response_code(TINY_API_RESPONSE_INTERNAL_SERVER_ERROR);
     exit(1);
