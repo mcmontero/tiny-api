@@ -90,6 +90,7 @@ if (!($response instanceof tiny_api_Base_Response))
     exit(1);
 }
 
+header('Content-Type: application/json');
 http_response_code($response->get_code());
 print json_encode($response->get_data());
 exit(0);
