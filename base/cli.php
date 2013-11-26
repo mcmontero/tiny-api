@@ -200,7 +200,8 @@ class tiny_api_Cli_Conf
 
         if (!empty($this->description))
         {
-            print $this->format_description($this->description, 60, '    ');
+            print $this->format_description('    ' . $this->description,
+                                            65, '    ');
             print "\n\n";
         }
 
