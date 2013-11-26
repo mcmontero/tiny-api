@@ -28,7 +28,8 @@
 // Perform superficial request verification.
 //
 
-@$temp = explode('/', $_SERVER[ 'SCRIPT_URL' ]);
+@$temp = explode('/', (array_key_exists('REDIRECT_URL', $_SERVER) ?
+                        $_SERVER[ 'REDIRECT_URL' ] : $_SERVER[ 'SCRIPT_URL' ]));
 if (count($temp) < 2)
 {
     error_log(new tiny_api_Dispatcher_Exception(
