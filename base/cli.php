@@ -171,8 +171,8 @@ class tiny_api_Cli_Conf
                                         $prepend = '')
     {
         $words = explode(' ', $description);
-        $len   = strlen($prepend);
-        $text  = $prepend;
+        $len   = 0;
+        $text  = '';
         foreach ($words as $word)
         {
             if (($len + strlen($word)) > $max_length)
@@ -213,7 +213,10 @@ class tiny_api_Cli_Conf
                    '    ',
                    $arg,
                    ($required ? 'required' : ''),
-                   $this->format_description($description, 28));
+                   $this->format_description(
+                            $description,
+                            28,
+                            tiny_api_cli_repeat_char(' ', 44)));
         }
 
         exit(0);
