@@ -37,7 +37,7 @@ extends tiny_api_Base_Handler
     {
         parent::__construct();
 
-        $this->dsh->select_db('test');
+        $this->dsh->select_db('local', 'test');
     }
 
     // +----------------+

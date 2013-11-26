@@ -41,6 +41,8 @@ extends tiny_api_Base_Data_Store
 {
     private $memcache_key;
     private $memcache_ttl;
+    protected $connection_name;
+    protected $db_name;
 
     function __construct()
     {
@@ -83,6 +85,13 @@ extends tiny_api_Base_Data_Store
                              array $binds = array())
     {
         return null;
+    }
+
+    final public function select_db($connection, $db)
+    {
+        $this->connection_name = $connection;
+        $this->db_name         = $db;
+        return $this;
     }
 
     public function update($target,

@@ -34,7 +34,6 @@ class tiny_api_Data_Store_Postgresql
 extends tiny_api_Base_Rdbms
 {
     private $postgresql;
-    private $db_name;
 
     function __construct()
     {
@@ -168,12 +167,6 @@ extends tiny_api_Base_Rdbms
         return $results;
     }
 
-    final public function select_db($name)
-    {
-        $this->db_name = $name;
-        return $this;
-    }
-
     final public function update($target,
                                  array $data,
                                  array $where = null,
@@ -226,15 +219,32 @@ extends tiny_api_Base_Rdbms
             return $this->postgresql;
         }
 
+        if (is_null($this->connection_name))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'cannot connect to PostgreSQL because not connection '
+                        . 'name was selected');
+        }
+
+        if (!array_key_exists(
+                $this->connection_name,
+                $__tiny_api_conf__[ 'postgresql connection data' ]))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'the PostgreSQL connection name you provided is '
+                        . 'invalid');
+        }
+
         if (is_null($this->db_name))
         {
             throw new tiny_Api_Data_Store_Exception(
-                        'cannot connect PostgreSQL because no database was '
-                        . 'selected');
+                        'cannot connect to PostgreSQL because no database name '
+                        . 'was selected');
         }
 
         if (($this->postgresql =
-                pg_pconnect($__tiny_api_conf__[ 'postgresql connection string' ]
+                pg_pconnect($__tiny_api_conf__[ 'postgresql connection data' ]
+                                              [ $this->connection_name ]
                             . ' dbname=' . $this->db_name))
             === false)
         {
@@ -281,8 +291,7 @@ extends tiny_api_Base_Rdbms
             $last_error = pg_last_error($this->postgresql);
             if (!preg_match('/already exists/', $last_error))
             {
-                throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
-                return null;
+                throw new tiny_Api_Data_Store_Exception($last_error);
             }
         }
 

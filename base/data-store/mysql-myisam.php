@@ -38,15 +38,6 @@ extends tiny_api_Base_Rdbms
     function __construct()
     {
         parent::__construct();
-
-        $this->mysql = new mysqli(ini_get("mysqli.default_host"),
-                                  ini_get("mysqli.default_user"),
-                                  ini_get("mysqli.default_pw"));
-        if ($this->mysql->connect_error)
-        {
-            throw new tiny_Api_Data_Store_Exception(
-                        $this->mysql->connect_error);
-        }
     }
 
     // +----------------+
@@ -59,6 +50,8 @@ extends tiny_api_Base_Rdbms
         {
             return null;
         }
+
+        $this->connect();
 
         $keys  = array_keys($data);
         $binds = $this->get_binds($keys);
@@ -95,6 +88,8 @@ extends tiny_api_Base_Rdbms
             return false;
         }
 
+        $this->connect();
+
         $query = "delete from $target "
                  . 'where ' . implode(' and ', $where);
 
@@ -122,6 +117,8 @@ extends tiny_api_Base_Rdbms
         {
             return $results_from_cache;
         }
+
+        $this->connect();
 
         $query = "/* $caller */ $query";
         if (($dss = $this->mysql->prepare($query)) === false)
@@ -159,6 +156,8 @@ extends tiny_api_Base_Rdbms
             return $results_from_cache;
         }
 
+        $this->connect();
+
         $query = 'select ' . implode(', ', $cols) . ' '
                  . "from $target";
         if (!is_null($where))
@@ -186,17 +185,6 @@ extends tiny_api_Base_Rdbms
         return $results;
     }
 
-    final public function select_db($name)
-    {
-        if ($this->mysql->select_db($name) === false)
-        {
-            throw new tiny_Api_Data_Store_Exception(
-                        "could not select DB \"$name\"");
-        }
-
-        return $this;
-    }
-
     final public function update($target,
                                  array $data,
                                  array $where = null,
@@ -206,6 +194,8 @@ extends tiny_api_Base_Rdbms
         {
             return false;
         }
+
+        $this->connect();
 
         $query = "update $target "
                  .  'set '
@@ -273,6 +263,57 @@ extends tiny_api_Base_Rdbms
                              array_merge(array($types), $vals));
 
         return true;
+    }
+
+    private function connect()
+    {
+        global $__tiny_api_conf__;
+
+        if (!is_null($this->mysql))
+        {
+            return $this->mysql;
+        }
+
+        if (is_null($this->connection_name))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'cannot connect to MySQL because no connection name '
+                        . 'was selected');
+        }
+
+        if (!array_key_exists($this->connection_name,
+                              $__tiny_api_conf__[ 'mysql connection data' ]))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'the MySQL connection name you provided is invalid');
+        }
+
+        if (is_null($this->db_name))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'cannot connect to MySQL because no database name was '
+                        . 'selected');
+        }
+
+        list($host, $user, $pw) =
+            $__tiny_api_conf__[ 'mysql connection data' ]
+                              [ $this->connection_name ];
+
+        $this->mysql = new mysqli($host, $user, $pw);
+        if ($this->mysql->connect_error)
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        $this->mysql->connect_error);
+        }
+
+        if ($this->mysql->select_db($this->db_name) === false)
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'could not select DB '
+                        . "\"" . $this->db_name . "\"");
+        }
+
+        return $this->mysql;
     }
 
     private function fetch_all_assoc($dss)

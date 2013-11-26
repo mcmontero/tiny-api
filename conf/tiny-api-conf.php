@@ -24,6 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
+require_once 'base/exception.php';
 require_once 'base/handler.php';
 require_once 'base/response.php';
 
@@ -70,11 +71,21 @@ $__tiny_api_conf__ = array(
         array('127.0.0.1:11211'),
 
     /**
+     * An array that maps a defined configuration name to the necessary
+     * MySQL login credentials so that multiple database servers can be
+     * used.  This includes the ability to read from a slave but write to a
+     * master or distribute reads over sharded slaves.
+     */
+    'mysql connection data' => array(
+        'local' => array('', '', ''),
+    ),
+
+    /**
      * The value provided here should match exactly what would normally
      * be passed to the PHP function pg_pconnect().
      */
-    'postgresql connection string' =>
-        'host=localhost port=5432 user=postgres password=abcd1234',
-
+    'postgresql connection data' => array(
+        'local' => 'host=localhost port=5432 user=postgres password=abcd1234',
+    ),
 );
 ?>
