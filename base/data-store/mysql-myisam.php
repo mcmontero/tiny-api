@@ -313,6 +313,11 @@ extends tiny_api_Base_Rdbms
                         . "\"" . $this->db_name . "\"");
         }
 
+        if (!empty($this->charset))
+        {
+            $this->mysql->set_charset($this->charset);
+        }
+
         return $this->mysql;
     }
 

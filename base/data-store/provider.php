@@ -43,6 +43,7 @@ extends tiny_api_Base_Data_Store
     private $memcache_ttl;
     protected $connection_name;
     protected $db_name;
+    protected $charset;
 
     function __construct()
     {
@@ -91,6 +92,12 @@ extends tiny_api_Base_Data_Store
     {
         $this->connection_name = $connection;
         $this->db_name         = $db;
+        return $this;
+    }
+
+    final public function set_charset($charset)
+    {
+        $this->charset = $charset;
         return $this;
     }
 
