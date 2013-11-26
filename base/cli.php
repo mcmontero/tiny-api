@@ -292,6 +292,11 @@ class tiny_api_Cli
         return $this;
     }
 
+    final public function get_arg($name)
+    {
+        return $this->conf->get_arg($name);
+    }
+
     final public function header($title)
     {
         print "\n";
