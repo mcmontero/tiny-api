@@ -1,0 +1,85 @@
+#!/usr/bin/php
+<?php
+
+// +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/cli.php';
+
+// +------------------------------------------------------------+
+// | INSTRUCTIONS                                               |
+// +------------------------------------------------------------+
+
+tiny_api_cli_main(
+    tiny_Api_Cli_Conf::make()
+        ->add_description('Executes all unit tests found in any path specified '
+                          . 'in the PHP include path.'),
+    'main');
+
+// +------------------------------------------------------------+
+// | PUBLIC FUNCTIONS                                           |
+// +------------------------------------------------------------+
+
+function main(tiny_api_Cli $cli)
+{
+    $cli->header('Unit Tests');
+
+    $include_path         = explode(':', ini_get('include_path'));
+    $total_run_time_start = microtime(true);
+    $num_total_tests      = 0;
+    foreach ($include_path as $path)
+    {
+        exec("/usr/bin/find $path/ -name \"*.php\" | /bin/grep \"/tests/\"",
+             $files, $retval);
+
+        foreach ($files as $file)
+        {
+            $cli->notice($file);
+
+            $file_run_time_start = microtime(true);
+            $num_file_tests      = 0;
+            $output              = null;
+
+            exec("/usr/bin/phpunit --tap --stop-on-failure $file 2>&1",
+                 $output, $retval);
+            if ($retval)
+            {
+                print_r($output);
+                exit(1);
+            }
+            $file_run_time_stop = microtime(true);
+
+            $num_output = count($output);
+            for ($i = 1; $i < $num_output; $i++)
+            {
+                if (!preg_match('/^(\d+)\.\.(\d+)$/', $output[ $i ], $matches))
+                {
+                    print "  " . $output[ $i ] . "\n";
+                }
+                else
+                {
+                    $num_total_tests += $matches[ 2 ];
+                    $num_file_tests  += $matches[ 2 ];
+                }
+            }
+
+            print '  num tests: '
+                  . number_format($num_file_tests)
+                  . ' | '
+                  . 'elapsed: '
+                  . ($file_run_time_stop - $file_run_time_start)
+                  . "\n\n";
+        }
+
+        // Make sure the next execution of the find command starts with an
+        // empty array of files.
+        $files = null;
+    }
+
+    $cli->notice('  Total number of tests executed: '
+                 . number_format($num_total_tests));
+    $cli->notice('Total elapsed time for all tests: '
+                . (microtime(true) - $total_run_time_start));
+}
+?>
