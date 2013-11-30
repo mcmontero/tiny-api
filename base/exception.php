@@ -33,20 +33,33 @@
 class tiny_api_Exception
 extends Exception
 {
-    function __construct($message)
+    private $text;
+
+    function __construct($text)
     {
-        parent::__construct($this->format_message($message));
+        parent::__construct($this->format_message($text));
+
+        $this->text = $text;
+    }
+
+    // +----------------+
+    // | Public Methods |
+    // +----------------+
+
+    final public function get_text()
+    {
+        return $this->text;
     }
 
     // +-----------------+
     // | Private Methods |
     // +-----------------+
 
-    private function format_message($message)
+    private function format_message($text)
     {
         return "\n====================================================="
                . "=========================\n"
-               . $message
+               . $text
                . "\n===================================================="
                . "==========================\n";
     }
@@ -75,4 +88,12 @@ class tiny_Api_Data_Store_Exception extends tiny_api_Exception {}
 //
 
 class tiny_Api_Cli_Exception extends tiny_api_Exception {}
+
+//
+// +----------------------------------+
+// | tiny_api_Table_Builder_Exception |
+// +----------------------------------+
+//
+
+class tiny_api_Table_Builder_Exception extends tiny_api_Exception {}
 ?>
