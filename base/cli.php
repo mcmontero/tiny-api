@@ -205,7 +205,6 @@ class tiny_api_Cli_Conf
             print "\n\n";
         }
 
-
         foreach ($this->options as $arg => $conf)
         {
             list($description, $required) = $conf;
