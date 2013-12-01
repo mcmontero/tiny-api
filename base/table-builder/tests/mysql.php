@@ -230,5 +230,192 @@ create table abc
                 ->float('ghi', 12)
                 ->get_definition());
     }
+
+    function test_table_calling_set_attribute()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int,
+    ghi int unsigned zerofill
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->int('ghi', null, true, true)
+                ->get_definition());
+    }
+
+    function test_table_help_attribute_methods()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int,
+    ghi int unique,
+    jkl int auto_increment,
+    mno int default 123
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->int('ghi')
+                    ->uk()
+                ->int('jkl')
+                    ->ai()
+                ->int('mno')
+                    ->def(123)
+                ->get_definition());
+    }
+
+    function test_table_active_column_is_primary_key()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int primary key
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                    ->pk()
+                ->get_definition());
+    }
+
+    function test_temporary_table()
+    {
+        ob_start();
+?>
+create temporary table abc
+(
+    id bigint unsigned not null auto_increment unique
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->temp()
+                ->id()
+                ->get_definition());
+    }
+
+    function test_table_composite_primary_key_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->pk(array('def', 'ghi'))
+                ->get_definition();
+
+            $this->fail('Was able to get the definition for a table even '
+                        . 'though one of the columns in the primary key '
+                        . 'did not exist.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'Column "ghi" cannot be used in primary key because it has not '
+                . 'been defined.',
+                $e->get_text());
+        }
+    }
+
+    function test_table_composite_primary_key()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int,
+    ghi int,
+    primary key abc_pk (def, ghi)
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->int('ghi')
+                ->pk(array('def', 'ghi'))
+                ->get_definition());
+    }
+
+    function test_table_composite_unique_key_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->uk(array('def', 'ghi'))
+                ->get_definition();
+
+            $this->fail('Was able to get the definition for a table even '
+                        . 'though one of the columns in a unique key did not '
+                        . 'exist.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'Column "ghi" cannot be used in unique key because it has not '
+                . 'been defined.',
+                $e->get_text());
+        }
+    }
+
+    function test_table_one_composite_unique_key()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int,
+    ghi int,
+    jkl int,
+    unique key abc_0_uk (def, ghi)
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->int('ghi')
+                ->int('jkl')
+                ->uk(array('def', 'ghi'))
+                ->get_definition());
+    }
+
+    function test_table_multiple_composite_unique_keys()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def int,
+    ghi int,
+    jkl int,
+    unique key abc_0_uk (def, ghi),
+    unique key abc_1_uk (ghi, jkl)
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('def')
+                ->int('ghi')
+                ->int('jkl')
+                ->uk(array('def', 'ghi'))
+                ->uk(array('ghi', 'jkl'))
+                ->get_definition());
+    }
 }
 ?>

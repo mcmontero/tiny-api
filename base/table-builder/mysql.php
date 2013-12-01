@@ -17,12 +17,18 @@ class tiny_api_Table
     private $columns;
     private $map;
     private $active_column;
+    private $temporary;
+    private $primary_key;
+    private $unique_keys;
 
     function __construct($name)
     {
-        $this->name    = $name;
-        $this->columns = array();
-        $this->map     = array();
+        $this->name        = $name;
+        $this->columns     = array();
+        $this->map         = array();
+        $this->temporary   = false;
+        $this->primary_key = array();
+        $this->unique_keys = array();
     }
 
     static function make($name)
@@ -34,6 +40,19 @@ class tiny_api_Table
     // | Public Methods |
     // +----------------+
 
+    final public function ai()
+    {
+        if (!($this->active_column instanceof _tiny_api_Mysql_Numeric_Column))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'A non-numeric column cannot be set to auto '
+                        . 'increment.');
+        }
+
+        $this->active_column->auto_increment();
+        return $this;
+    }
+
     final public function bit($name, $num_bits = null)
     {
         $this->add_column(
@@ -44,12 +63,17 @@ class tiny_api_Table
         return $this;
     }
 
-    final public function bint($name, $max_display_width = null)
+    final public function bint($name,
+                               $max_display_width = null,
+                               $unsigned = false,
+                               $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIGINT,
                                $max_display_width));
+
+        $this->set_attributes($unsigned, $zero_fill);
 
         return $this;
     }
@@ -60,19 +84,35 @@ class tiny_api_Table
         return $this;
     }
 
-    final public function dec($name, $precision = null, $scale = null)
+    final public function dec($name,
+                              $precision = null,
+                              $scale = null,
+                              $unsigned = false,
+                              $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->decimal_type(_tiny_api_Mysql_Numeric_Column::TYPE_DECIMAL,
                                $precision, $scale));
 
+        $this->set_attributes($unsigned, $zero_fill);
+
         return $this;
     }
 
-    final public function double($name, $precision = null, $scale = null)
+    final public function def($default)
     {
-        $this->dec($name, $precision, $scale);
+        $this->active_column->default_value($default);
+        return $this;
+    }
+
+    final public function double($name,
+                                 $precision = null,
+                                 $scale = null,
+                                 $unsigned = false,
+                                 $zero_fill = false)
+    {
+        $this->dec($name, $precision, $scale, $unsigned, $zero_fill);
         return $this;
     }
 
@@ -89,17 +129,26 @@ class tiny_api_Table
         return $this;
     }
 
-    final public function fixed($name, $precision = null, $scale = null)
+    final public function fixed($name,
+                                $precision = null,
+                                $scale = null,
+                                $unsigned = false,
+                                $zero_fill = false)
     {
-        $this->dec($name, $precision, $scale);
+        $this->dec($name, $precision, $scale, $unsigned, $zero_fill);
         return $this;
     }
 
-    final public function float($name, $precision = null)
+    final public function float($name,
+                                $precision = null,
+                                $unsigned = false,
+                                $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->float_type($precision));
+
+        $this->set_attributes($unsigned, $zero_fill);
 
         return $this;
     }
@@ -113,17 +162,39 @@ class tiny_api_Table
                         . 'columns.');
         }
 
-        $columns = array();
+        $terms = array();
         foreach ($this->columns as $column)
         {
-            $columns[] = '    ' . $column->get_definition();
+            $terms[] = '    ' . $column->get_definition();
+        }
+
+        if (!empty($this->unique_keys))
+        {
+            foreach ($this->unique_keys as $index => $unique_key)
+            {
+                $terms[] = '    unique key '
+                           . $this->name
+                           . "_$index"
+                           . '_uk ('
+                           . implode(', ', $unique_key)
+                           . ')';
+            }
+        }
+
+        if (!empty($this->primary_key))
+        {
+            $terms[] = '    primary key '
+                       . $this->name
+                       . '_pk ('
+                       . implode(', ', $this->primary_key)
+                       . ')';
         }
 
         ob_start();
 ?>
-create table <?= $this->name . "\n" ?>
+create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?>
 (
-<?= implode(",\n", $columns) . "\n" ?>
+<?= implode(",\n", $terms) . "\n" ?>
 )<?= !is_null($this->engine) ? ' engine = ' . $this->engine . ';' : ';' ?>
 <?
         return ob_get_clean();
@@ -135,22 +206,58 @@ create table <?= $this->name . "\n" ?>
         return $this;
     }
 
-    final public function int($name, $max_display_width = null)
+    final public function int($name,
+                              $max_display_width = null,
+                              $unsigned = false,
+                              $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_INT,
                                $max_display_width));
 
+        $this->set_attributes($unsigned, $zero_fill);
+
         return $this;
     }
 
-    final public function mint($name, $max_display_width = null)
+    final public function mint($name,
+                               $max_display_width = null,
+                               $unsigned = false,
+                               $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_MEDIUMINT,
                                $max_display_width));
+
+        $this->set_attributes($unsigned, $zero_fill);
+
+        return $this;
+    }
+
+    final public function pk($cols = null)
+    {
+        if (is_null($cols))
+        {
+            $this->active_column->primary_key();
+        }
+        else
+        {
+            $num_cols = count($cols);
+            for ($i = 0; $i < $num_cols; $i++)
+            {
+                if (!array_key_exists($cols[ $i ], $this->map))
+                {
+                    throw new tiny_api_Table_Builder_Exception(
+                                "Column \"" . $cols[ $i ] . "\" cannot be used "
+                                . "in primary key because it has not been "
+                                . "defined.");
+                }
+
+                $this->primary_key[] = $cols[ $i ];
+            }
+        }
 
         return $this;
     }
@@ -168,22 +275,67 @@ create table <?= $this->name . "\n" ?>
         return $this;
     }
 
-    final public function sint($name, $max_display_width = null)
+    final public function sint($name,
+                               $max_display_width = null,
+                               $unsigned = false,
+                               $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::SMALLINT,
                                $max_display_width));
 
+        $this->set_attributes($unsigned, $zero_fill);
+
         return $this;
     }
 
-    final public function tint($name, $max_display_width = null)
+    final public function temp()
+    {
+        $this->temporary = true;
+        return $this;
+    }
+
+    final public function tint($name,
+                               $max_display_width = null,
+                               $unsigned = false,
+                               $zero_fill = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_TINYINT,
                                $max_display_width));
+
+        $this->set_attributes($unsigned, $zero_fill);
+
+        return $this;
+    }
+
+    final public function uk($cols = null)
+    {
+        if (is_null($cols))
+        {
+            $this->active_column->unique();
+        }
+        else
+        {
+            $unique_key = array();
+            $num_cols   = count($cols);
+            for ($i = 0; $i < $num_cols; $i++)
+            {
+                if (!array_key_exists($cols[ $i ], $this->map))
+                {
+                    throw new tiny_api_Table_Builder_Exception(
+                                "Column \"" . $cols[ $i ] . "\" cannot be used "
+                                . "in unique key because it has not been "
+                                . "defined.");
+                }
+
+                $unique_key[] = $cols[ $i ];
+            }
+
+            $this->unique_keys[] = $unique_key;
+        }
 
         return $this;
     }
@@ -200,6 +352,19 @@ create table <?= $this->name . "\n" ?>
         $this->columns[]     = $this->active_column;
 
         return $this;
+    }
+
+    private function set_attributes($unsigned, $zero_fill)
+    {
+        if ($unsigned)
+        {
+            $this->active_column->unsigned();
+        }
+
+        if ($zero_fill)
+        {
+            $this->active_column->zero_fill();
+        }
     }
 
     private function validate_name_does_not_exist_and_register($name)
@@ -370,6 +535,11 @@ extends _tiny_api_Mysql_Column
             $terms[] = 'default ' . $this->default;
         }
 
+        if ($this->primary_key === true)
+        {
+            $terms[] = 'primary key';
+        }
+
         return implode(' ', $terms);
     }
 
@@ -446,6 +616,7 @@ class _tiny_api_Mysql_Column
     protected $not_null;
     protected $unique;
     protected $default;
+    protected $primary_key;
 
     function __construct($name)
     {
@@ -470,6 +641,12 @@ class _tiny_api_Mysql_Column
     final public function not_null()
     {
         $this->not_null = true;
+        return $this;
+    }
+
+    final public function primary_key()
+    {
+        $this->primary_key = true;
         return $this;
     }
 
