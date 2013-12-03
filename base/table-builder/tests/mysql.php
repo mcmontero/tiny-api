@@ -46,7 +46,7 @@ extends PHPUnit_Framework_TestCase
         catch (tiny_api_Table_Builder_Exception $e)
         {
             $this->assertEquals(
-                'The column "def" already exists.',
+                'the column "def" already exists',
                 $e->get_text());
         }
     }
@@ -192,7 +192,7 @@ extends PHPUnit_Framework_TestCase
         }
         catch (tiny_api_Table_Builder_Exception $e)
         {
-            $this->assertEquals('The engine "def" is invalid.', $e->get_text());
+            $this->assertEquals('the engine "def" is invalid', $e->get_text());
         }
     }
 
@@ -208,7 +208,7 @@ extends PHPUnit_Framework_TestCase
         catch (tiny_api_Table_Builder_Exception $e)
         {
             $this->assertEquals(
-                'The table cannot be defined because it has no columns.',
+                'the table cannot be defined because it has no columns',
                 $e->get_text());
         }
     }
@@ -344,8 +344,8 @@ create temporary table abc
         catch (tiny_api_Table_Builder_Exception $e)
         {
             $this->assertEquals(
-                'Column "ghi" cannot be used in primary key because it has not '
-                . 'been defined.',
+                'column "ghi" cannot be used in primary key because it has not '
+                . 'been defined',
                 $e->get_text());
         }
     }
@@ -386,8 +386,8 @@ create table abc
         catch (tiny_api_Table_Builder_Exception $e)
         {
             $this->assertEquals(
-                'Column "ghi" cannot be used in unique key because it has not '
-                . 'been defined.',
+                'column "ghi" cannot be used in unique key because it has not '
+                . 'been defined',
                 $e->get_text());
         }
     }

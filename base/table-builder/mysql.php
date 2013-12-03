@@ -45,8 +45,7 @@ class tiny_api_Table
         if (!($this->active_column instanceof _tiny_api_Mysql_Numeric_Column))
         {
             throw new tiny_api_Table_Builder_Exception(
-                        'A non-numeric column cannot be set to auto '
-                        . 'increment.');
+                        'a non-numeric column cannot be set to auto increment');
         }
 
         $this->active_column->auto_increment();
@@ -122,7 +121,7 @@ class tiny_api_Table
         if (!in_array($engine, array('myisam', 'innodb')))
         {
             throw new tiny_api_Table_Builder_Exception(
-                        "The engine \"$engine\" is invalid.");
+                        "the engine \"$engine\" is invalid");
         }
 
         $this->engine = $engine;
@@ -158,8 +157,8 @@ class tiny_api_Table
         if (count($this->columns) == 0)
         {
             throw new tiny_api_Table_Builder_Exception(
-                        'The table cannot be defined because it has no '
-                        . 'columns.');
+                        'the table cannot be defined because it has no '
+                        . 'columns');
         }
 
         $terms = array();
@@ -250,9 +249,9 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 if (!array_key_exists($cols[ $i ], $this->map))
                 {
                     throw new tiny_api_Table_Builder_Exception(
-                                "Column \"" . $cols[ $i ] . "\" cannot be used "
+                                "column \"" . $cols[ $i ] . "\" cannot be used "
                                 . "in primary key because it has not been "
-                                . "defined.");
+                                . "defined");
                 }
 
                 $this->primary_key[] = $cols[ $i ];
@@ -326,9 +325,9 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 if (!array_key_exists($cols[ $i ], $this->map))
                 {
                     throw new tiny_api_Table_Builder_Exception(
-                                "Column \"" . $cols[ $i ] . "\" cannot be used "
+                                "column \"" . $cols[ $i ] . "\" cannot be used "
                                 . "in unique key because it has not been "
-                                . "defined.");
+                                . "defined");
                 }
 
                 $unique_key[] = $cols[ $i ];
@@ -372,7 +371,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         if (array_key_exists($name, $this->map))
         {
             throw new tiny_api_Table_Builder_Exception(
-                        "The column \"$name\" already exists.");
+                        "the column \"$name\" already exists");
         }
 
         $this->map[ $name ] = true;
@@ -501,7 +500,7 @@ extends _tiny_api_Mysql_Column
 
             default:
                 throw new tiny_api_Table_Builder_Exception(
-                            'Unrecognized numeric column type '
+                            'unrecognized numeric column type '
                             . "\"" . $this->type_id . "\"");
         }
 
@@ -580,8 +579,8 @@ extends _tiny_api_Mysql_Column
                                       self::TYPE_FLOAT,
                                       self::TYPE_DOUBLE)))
         {
-            throw new tiny_api_Table_Builder_Exception('The type ID provided '
-                                                       . 'was invalid.');
+            throw new tiny_api_Table_Builder_Exception('the type ID provided '
+                                                       . 'was invalid');
         }
     }
 
