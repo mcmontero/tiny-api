@@ -55,7 +55,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef bit unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIT)
                 ->default_value('1')
@@ -71,7 +71,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef bigint(13) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIGINT, 13)
                 ->default_value('1')
@@ -87,7 +87,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef mediumint(13) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_MEDIUMINT,
                                13)
@@ -104,7 +104,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef int(13) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_INT, 13)
                 ->default_value('1')
@@ -120,7 +120,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef smallint(13) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_SMALLINT,
                                13)
@@ -137,7 +137,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef tinyint(13) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_TINYINT, 13)
                 ->default_value('1')
@@ -153,7 +153,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef decimal(12, 34) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->decimal_type(_tiny_api_Mysql_Numeric_Column::TYPE_DECIMAL,
                                12, 34)
@@ -170,7 +170,7 @@ extends PHPUnit_Framework_TestCase
     {
         $this->assertEquals(
             'abcdef float(12) unsigned zerofill not null '
-            . 'auto_increment unique default 1',
+            . 'auto_increment unique default \'1\'',
             _tiny_api_Mysql_Numeric_Column::make('abcdef')
                 ->float_type(12)
                 ->default_value('1')
@@ -265,7 +265,7 @@ create table abc
             trim(ob_get_clean()),
             tiny_api_Table::make('abc')
                 ->int('def')
-                ->int('ghi', null, true, true)
+                ->int('ghi', null, false, true, true)
                 ->get_definition());
     }
 
@@ -278,7 +278,7 @@ create table abc
     def int,
     ghi int unique,
     jkl int auto_increment,
-    mno int default 123
+    mno int default '123'
 );
 <?
         $this->assertEquals(
@@ -435,6 +435,180 @@ create table abc
                 ->int('jkl')
                 ->uk(array('def', 'ghi'))
                 ->uk(array('ghi', 'jkl'))
+                ->get_definition());
+    }
+
+    function test_date_time_column_date_time_type_exception()
+    {
+        try
+        {
+            _tiny_api_Mysql_Date_Time_Column::make('abc')
+                ->date_time_type(-1);
+
+            $this->fail('Was able to set a date time type even though the '
+                        . 'type ID provided was invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+    }
+
+    function test_date_time_column_date()
+    {
+        $this->assertEquals(
+            'abcdef date not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->date_time_type(_tiny_api_Mysql_Date_Time_Column::TYPE_DATE)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_date_time_column_datetime()
+    {
+        $this->assertEquals(
+            'abcdef datetime not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_DATETIME)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_date_time_column_timestamp()
+    {
+        $this->assertEquals(
+            'abcdef timestamp not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_TIMESTAMP)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_date_time_column_time()
+    {
+        $this->assertEquals(
+            'abcdef time not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->date_time_type(_tiny_api_Mysql_Date_Time_Column::TYPE_TIME)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_date_time_column_year_2()
+    {
+        $this->assertEquals(
+            'abcdef year(2) not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->year(2)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_date_time_column_year_4()
+    {
+        $this->assertEquals(
+            'abcdef year(4) not null unique default \'1\'',
+            _tiny_api_Mysql_Date_Time_Column::make('abcdef')
+                ->year(4)
+                ->default_value('1')
+                ->not_null()
+                ->unique()
+                ->get_definition());
+    }
+
+    function test_table_date_columns_year_4()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def date not null,
+    ghi datetime not null,
+    jkl timestamp not null,
+    mno time not null,
+    pqr year(4) not null
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->dt('def', true)
+                ->dtt('ghi', true)
+                ->ts('jkl', true)
+                ->ti('mno', true)
+                ->yr('pqr', 4, true)
+                ->get_definition());
+    }
+
+    function test_table_date_columns_year_2()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def date,
+    ghi datetime,
+    jkl timestamp,
+    mno time,
+    pqr year(2)
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->dt('def')
+                ->dtt('ghi')
+                ->ts('jkl')
+                ->ti('mno')
+                ->yr('pqr', 2)
+                ->get_definition());
+    }
+
+    function test_getting_default_term_from_column_non_reserved()
+    {
+        $col = new _tiny_api_Mysql_Column('abc');
+        $col->default_value('def');
+
+        $this->assertEquals("default 'def'", $col->get_default_term());
+    }
+
+    function test_getting_default_term_from_column_current_datetime()
+    {
+        $col = new _tiny_api_Mysql_Column('abc');
+        $col->default_value('current_timestamp');
+
+        $this->assertEquals("default current_timestamp",
+                            $col->get_default_term());
+    }
+
+    function test_table_created()
+    {
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null auto_increment unique,
+    date_created datetime not null default current_timestamp
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->id()
+                ->created()
                 ->get_definition());
     }
 }

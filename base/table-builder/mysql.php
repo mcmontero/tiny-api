@@ -49,21 +49,25 @@ class tiny_api_Table
         }
 
         $this->active_column->auto_increment();
+
         return $this;
     }
 
-    final public function bit($name, $num_bits = null)
+    final public function bit($name, $num_bits = null, $not_null = false)
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIT,
                                $num_bits));
 
+        $this->set_attributes($not_null, null, null);
+
         return $this;
     }
 
     final public function bint($name,
                                $max_display_width = null,
+                               $not_null = false,
                                $unsigned = false,
                                $zero_fill = false)
     {
@@ -72,20 +76,30 @@ class tiny_api_Table
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIGINT,
                                $max_display_width));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
 
-    final public function bool($name)
+    final public function bool($name, $not_null = null)
     {
-        $this->tint($name, 1);
+        $this->tint($name, 1, $not_null);
+        return $this;
+    }
+
+    final public function created()
+    {
+        $this->dtt('date_created', true);
+
+        $this->active_column->default_value('current_timestamp');
+
         return $this;
     }
 
     final public function dec($name,
                               $precision = null,
                               $scale = null,
+                              $not_null = false,
                               $unsigned = false,
                               $zero_fill = false)
     {
@@ -94,7 +108,7 @@ class tiny_api_Table
                 ->decimal_type(_tiny_api_Mysql_Numeric_Column::TYPE_DECIMAL,
                                $precision, $scale));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
@@ -108,10 +122,34 @@ class tiny_api_Table
     final public function double($name,
                                  $precision = null,
                                  $scale = null,
+                                 $not_null = false,
                                  $unsigned = false,
                                  $zero_fill = false)
     {
-        $this->dec($name, $precision, $scale, $unsigned, $zero_fill);
+        $this->dec($name, $precision, $scale, $not_null, $unsigned, $zero_fill);
+        return $this;
+    }
+
+    final public function dt($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->date_time_type(_tiny_api_Mysql_Date_Time_Column::TYPE_DATE));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function dtt($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_DATETIME));
+
+        $this->set_attributes($not_null, null, null);
+
         return $this;
     }
 
@@ -131,15 +169,17 @@ class tiny_api_Table
     final public function fixed($name,
                                 $precision = null,
                                 $scale = null,
+                                $not_null = false,
                                 $unsigned = false,
                                 $zero_fill = false)
     {
-        $this->dec($name, $precision, $scale, $unsigned, $zero_fill);
+        $this->dec($name, $precision, $scale, $not_null, $unsigned, $zero_fill);
         return $this;
     }
 
     final public function float($name,
                                 $precision = null,
+                                $not_null = false,
                                 $unsigned = false,
                                 $zero_fill = false)
     {
@@ -147,7 +187,7 @@ class tiny_api_Table
             _tiny_api_Mysql_Numeric_Column::make($name)
                 ->float_type($precision));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
@@ -207,6 +247,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
     final public function int($name,
                               $max_display_width = null,
+                              $not_null = false,
                               $unsigned = false,
                               $zero_fill = false)
     {
@@ -215,13 +256,14 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_INT,
                                $max_display_width));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
 
     final public function mint($name,
                                $max_display_width = null,
+                               $not_null = false,
                                $unsigned = false,
                                $zero_fill = false)
     {
@@ -230,7 +272,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_MEDIUMINT,
                                $max_display_width));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
@@ -276,6 +318,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
     final public function sint($name,
                                $max_display_width = null,
+                               $not_null = false,
                                $unsigned = false,
                                $zero_fill = false)
     {
@@ -284,7 +327,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::SMALLINT,
                                $max_display_width));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
 
         return $this;
     }
@@ -297,6 +340,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
     final public function tint($name,
                                $max_display_width = null,
+                               $not_null = false,
                                $unsigned = false,
                                $zero_fill = false)
     {
@@ -305,7 +349,31 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                 ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_TINYINT,
                                $max_display_width));
 
-        $this->set_attributes($unsigned, $zero_fill);
+        $this->set_attributes($not_null, $unsigned, $zero_fill);
+
+        return $this;
+    }
+
+    final public function ti($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_TIME));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function ts($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_TIMESTAMP));
+
+        $this->set_attributes($not_null, null, null);
 
         return $this;
     }
@@ -339,6 +407,17 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function yr($name, $num_digits = 4, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->year($num_digits));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     // +-----------------+
     // | Private Methods |
     // +-----------------+
@@ -353,8 +432,13 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
-    private function set_attributes($unsigned, $zero_fill)
+    private function set_attributes($not_null, $unsigned, $zero_fill)
     {
+        if ($not_null)
+        {
+            $this->active_column->not_null();
+        }
+
         if ($unsigned)
         {
             $this->active_column->unsigned();
@@ -446,7 +530,6 @@ extends _tiny_api_Mysql_Column
 
     final public function float_type($precision)
     {
-
         $this->type_id   = self::TYPE_FLOAT;
         $this->precision = $precision;
         return $this;
@@ -531,7 +614,7 @@ extends _tiny_api_Mysql_Column
 
         if (!is_null($this->default))
         {
-            $terms[] = 'default ' . $this->default;
+            $terms[] = $this->get_default_term();
         }
 
         if ($this->primary_key === true)
@@ -604,6 +687,126 @@ extends _tiny_api_Mysql_Column
 }
 
 //
+// +----------------------------------+
+// | _tiny_api_Mysql_Date_Time_Column |
+// +----------------------------------+
+//
+
+class _tiny_api_Mysql_Date_Time_Column
+extends _tiny_api_Mysql_Column
+{
+    const TYPE_DATE      = 1;
+    const TYPE_DATETIME  = 2;
+    const TYPE_TIMESTAMP = 3;
+    const TYPE_TIME      = 4;
+    const TYPE_YEAR      = 5;
+
+    private $type_id;
+    private $num_digits;
+
+    function __construct($name)
+    {
+        parent::__construct($name);
+    }
+
+    static function make($name)
+    {
+        return new self($name);
+    }
+
+    // +----------------+
+    // | Public Methods |
+    // +----------------+
+
+    final public function date_time_type($type_id)
+    {
+        $this->validate_type_id($type_id);
+
+        $this->type_id = $type_id;
+        return $this;
+    }
+
+    final public function get_definition()
+    {
+        $terms = array($this->name);
+
+        switch ($this->type_id)
+        {
+            case self::TYPE_DATE:
+                $terms[] = 'date';
+                break;
+
+            case self::TYPE_DATETIME:
+                $terms[] = 'datetime';
+                break;
+
+            case self::TYPE_TIMESTAMP:
+                $terms[] = 'timestamp';
+                break;
+
+            case self::TYPE_TIME:
+                $terms[] = 'time';
+                break;
+
+            case self::TYPE_YEAR:
+                $terms[] = 'year(' . $this->num_digits . ')';
+                break;
+
+            default:
+                throw new tiny_api_Table_Builder_Exception(
+                            'unrecognized date time column type '
+                            . "\"" . $this->type_id . "\"");
+        }
+
+        if ($this->not_null === true)
+        {
+            $terms[] = 'not null';
+        }
+
+        if ($this->unique === true)
+        {
+            $terms[] = 'unique';
+        }
+
+        if (!is_null($this->default))
+        {
+            $terms[] = $this->get_default_term();
+        }
+
+        if ($this->primary_key === true)
+        {
+            $terms[] = 'primary key';
+        }
+
+        return implode(' ', $terms);
+    }
+
+    final public function year($num_digits = 4)
+    {
+        $this->type_id    = self::TYPE_YEAR;
+        $this->num_digits = $num_digits;
+        return $this;
+    }
+
+    // +-----------------+
+    // | Private Methods |
+    // +-----------------+
+
+    private function validate_type_id($type_id)
+    {
+        if (!in_array($type_id, array(self::TYPE_DATE,
+                                      self::TYPE_DATETIME,
+                                      self::TYPE_TIMESTAMP,
+                                      self::TYPE_TIME,
+                                      self::TYPE_YEAR)))
+        {
+            throw new tiny_api_Table_Builder_Exception('the type ID provided '
+                                                       . 'was invalid');
+        }
+    }
+}
+
+//
 // +------------------------+
 // | _tiny_api_Mysql_Column |
 // +------------------------+
@@ -630,6 +833,18 @@ class _tiny_api_Mysql_Column
     {
         $this->default = $default;
         return $this;
+    }
+
+    final public function get_default_term()
+    {
+        $reserved = array(
+            'current_timestamp' => true,
+        );
+
+        return 'default '
+               . (!array_key_exists($this->default, $reserved) ?
+                    "'" . $this->default . "'" :
+                    $this->default);
     }
 
     final public function get_name()
