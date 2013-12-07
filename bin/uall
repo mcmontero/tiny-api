@@ -45,7 +45,11 @@ function main(tiny_api_Cli $cli)
                  $output, $retval);
             if ($retval)
             {
-                print_r($output);
+                if (!_uall_pretty_print_string_equality_failures($cli, $output))
+                {
+                    print_r($output);
+                }
+
                 exit(1);
             }
             $file_run_time_stop = microtime(true);
@@ -81,5 +85,77 @@ function main(tiny_api_Cli $cli)
                  . number_format($num_total_tests));
     $cli->notice('Total elapsed time for all tests: '
                 . (microtime(true) - $total_run_time_start));
+}
+
+// +------------------------------------------------------------+
+// | PRIVATE FUNCTIONS                                          |
+// +------------------------------------------------------------+
+
+function _uall_pretty_print_string_equality_failures(tiny_api_Cli $cli, $output)
+{
+    foreach ($output as $index => $line)
+    {
+        if (preg_match('/Failed asserting that two strings are equal/', $line))
+        {
+            $failed_unit_test = $output[ $index - 2 ];
+
+            $got =
+                explode(
+                    "\n",
+                    preg_replace(
+                        '/"$/msi', '',
+                        preg_replace(
+                            '/^[ ]+got: [\'|"]?/', '',
+                            preg_replace(
+                                '/\\\n/', "\n",
+                                $output[ $index + 3 ]))));
+            $expected =
+                explode(
+                    "\n",
+                    preg_replace(
+                        '/"$/msi', '',
+                        preg_replace(
+                            '/^[ ]+expected: [\'|"]?/', '',
+                            preg_replace(
+                                '/\\\n/', "\n",
+                                $output[ $index + 4 ]))));
+
+            // Why is this code here?  It's possible that either got or
+            // expected has more lines than the other.  In that case, we want
+            // to drive the comparison why whichever one has more lines.
+            $source = $expected;
+            $target = $got;
+            if (count($got) > count($expected))
+            {
+                $source = $got;
+                $target = $expected;
+            }
+
+            print "  $failed_unit_test\n\n";
+            print "    message: 'Failed asserting that two strings are "
+                  . "equal.'\n";
+            print "    severity: fail\n\n";
+
+            foreach ($source as $index => $line)
+            {
+                if (!array_key_exists($index, $target))
+                {
+                    $cli->notice("!=  $line\n        line did not exist", 1);
+                }
+                else if ($line == $target[ $index ])
+                {
+                    $cli->notice("==  $line\n        " . $target[ $index ], 1);
+                }
+                else
+                {
+                    $cli->notice("!=  $line\n        " . $target[ $index ], 1);
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
 }
 ?>
