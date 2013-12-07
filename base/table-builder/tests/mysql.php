@@ -601,7 +601,7 @@ create table abc
 create table abc
 (
     id bigint unsigned not null auto_increment unique,
-    date_created datetime not null default current_timestamp
+    date_created datetime not null
 );
 <?
         $this->assertEquals(
@@ -609,6 +609,427 @@ create table abc
             tiny_api_Table::make('abc')
                 ->id()
                 ->created()
+                ->get_definition());
+    }
+
+    function test_getting_on_update_term()
+    {
+        $col = new _tiny_api_Mysql_Column('abc');
+        $col->on_update('current_timestamp');
+
+        $this->assertEquals('on update current_timestamp',
+                            $col->get_on_update_term());
+    }
+
+    function test_table_updated()
+    {
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null auto_increment unique,
+    date_updated timestamp not null on update current_timestamp
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->id()
+                ->updated()
+                ->get_definition());
+    }
+
+    function test_string_validate_type_id_exceptions()
+    {
+        try
+        {
+            _tiny_api_Mysql_String_Column::make('abc')->binary_type(-1);
+
+            $this->fail('Was able to set binary type even though ID provided '
+                        . 'was invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+
+        try
+        {
+            _tiny_api_Mysql_String_Column::make('abc')->blob_type(-1);
+
+            $this->fail('Was able to set blob type even though ID provided was '
+                        . 'invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+
+        try
+        {
+            _tiny_api_Mysql_String_Column::make('abc')->char_type(-1);
+
+            $this->fail('Was able to set char type even though ID provided was '
+                        . 'invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+
+        try
+        {
+            _tiny_api_Mysql_String_Column::make('abc')->list_type(-1, array());
+
+            $this->fail('Was able to set list type even though ID provided was '
+                        . 'invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+
+        try
+        {
+            _tiny_api_Mysql_String_Column::make('abc')->text_type(-1);
+
+            $this->fail('Was able to set text type even though ID provided was '
+                        . 'invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the type ID provided was invalid',
+                                $e->get_text());
+        }
+    }
+
+    function test_string_blob_type_exceptions()
+    {
+        $types = array(
+            _tiny_api_Mysql_String_Column::TYPE_TINYBLOB,
+            _tiny_api_Mysql_String_Column::TYPE_MEDIUMBLOB,
+            _tiny_api_Mysql_String_Column::TYPE_LONGBLOB,
+        );
+
+        foreach ($types as $type_id)
+        {
+            try
+            {
+                _tiny_api_Mysql_String_Column::make('abc')
+                    ->blob_type($type_id, 15);
+
+                $this->fail('Was able to specify length even though it is not '
+                            . 'allowed for a non-blob column.');
+            }
+            catch (tiny_api_Table_Builder_Exception $e)
+            {
+                $this->assertEquals(
+                    'you can only specify the length if the column is blob',
+                    $e->get_text());
+            }
+        }
+    }
+
+    function test_string_text_type_exceptions()
+    {
+        $types = array(
+            _tiny_api_Mysql_String_Column::TYPE_TINYTEXT,
+            _tiny_api_Mysql_String_Column::TYPE_MEDIUMTEXT,
+            _tiny_api_Mysql_String_Column::TYPE_LONGTEXT,
+        );
+
+        foreach ($types as $type_id)
+        {
+            try
+            {
+                _tiny_api_Mysql_String_Column::make('abc')
+                    ->text_type($type_id, 15);
+
+                $this->fail('Was able to specify length even though it is not '
+                            . 'allowed for a non-text column.');
+            }
+            catch (tiny_api_Table_Builder_Exception $e)
+            {
+                $this->assertEquals(
+                    'you can only specify the length if the column is text',
+                    $e->get_text());
+            }
+        }
+    }
+
+    function test_string_binary_binary()
+    {
+        $this->assertEquals(
+            'abc binary(15) character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->binary_type(_tiny_api_Mysql_String_Column::TYPE_BINARY, 15)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_binary_varbinary()
+    {
+        $this->assertEquals(
+            'abc varbinary(15) character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->binary_type(_tiny_api_Mysql_String_Column::TYPE_VARBINARY, 15)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_blob_tinyblob()
+    {
+        $this->assertEquals(
+            'abc tinyblob character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_TINYBLOB)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_blob_blob()
+    {
+        $this->assertEquals(
+            'abc blob(15) character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_BLOB, 15)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_blob_mediumblob()
+    {
+        $this->assertEquals(
+            'abc mediumblob character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_MEDIUMBLOB)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_blob_longblob()
+    {
+        $this->assertEquals(
+            'abc longblob character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_LONGBLOB)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_char_char()
+    {
+        $this->assertEquals(
+            'abc char(15) character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->char_type(_tiny_api_Mysql_String_Column::TYPE_CHAR, 15)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_char_varchar()
+    {
+        $this->assertEquals(
+            'abc varchar(15) character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->char_type(_tiny_api_Mysql_String_Column::TYPE_VARCHAR, 15)
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_list_enum()
+    {
+        $this->assertEquals(
+            'abc enum(\'x\', \'y\') character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->list_type(_tiny_api_Mysql_String_Column::TYPE_ENUM,
+                            array('x', 'y'))
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_list_set()
+    {
+        $this->assertEquals(
+            'abc set(\'x\', \'y\') character set def collate ghi',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->list_type(_tiny_api_Mysql_String_Column::TYPE_SET,
+                            array('x', 'y'))
+                ->charset('def')
+                ->collation('ghi')
+                ->get_definition());
+    }
+
+    function test_string_types_in_a_table()
+    {
+        ob_start();
+?>
+create table abc
+(
+    def char(15) not null,
+    ghi varchar(16) not null,
+    jkl binary(17) not null,
+    mno varbinary(18) not null,
+    pqr tinyblob not null,
+    stu blob(19) not null,
+    vwx mediumblob not null,
+    yza longblob not null,
+    bcd tinytext not null,
+    efg text(20) not null,
+    hij mediumtext not null,
+    klm longtext not null,
+    nop enum('a', 'b') not null,
+    qrs set('c', 'd') not null
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->char('def', 15, true)
+                ->vchar('ghi', 16, true)
+                ->bin('jkl', 17, true)
+                ->vbin('mno', 18, true)
+                ->tblob('pqr', true)
+                ->blob('stu', 19, true)
+                ->mblob('vwx', true)
+                ->lblob('yza', true)
+                ->ttext('bcd', true)
+                ->text('efg', 20, true)
+                ->mtext('hij', true)
+                ->ltext('klm', true)
+                ->enum('nop', array('a', 'b'), true)
+                ->set('qrs', array('c', 'd'), true)
+                ->get_definition());
+    }
+
+    function test_ref_table_exceptions()
+    {
+        try
+        {
+            tiny_api_Ref_Table::make('abc');
+
+            $this->fail('Was able to create a reference table even though '
+                        . 'the table name was non-standard.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'the name of the reference table must contain "_ref_"',
+                $e->get_text());
+        }
+
+        try
+        {
+            tiny_api_Ref_Table::make('abc_ref_def')->add('a', 'b');
+
+            $this->fail('Was able to create a reference table even though '
+                        . 'the ID provided was not an integer.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'the ID value provided must be an integer',
+                $e->get_text());
+        }
+
+        try
+        {
+            tiny_api_Ref_Table::make('abc_ref_def')
+                ->add(1, 'a')
+                ->add(1, 'b');
+
+            $this->fail('Was able to create a reference table even though '
+                        . 'a duplicate ID value was used.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the ID "1" is already defined',
+                                $e->get_text());
+        }
+
+        try
+        {
+            tiny_api_Ref_Table::make('abc_ref_def')
+                ->add(1, 'a', 1)
+                ->add(2, 'b', 1);
+
+            $this->fail('Was able to create a reference table even though '
+                        . 'a duplicate display order was used.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('the display order "1" is already defined',
+                                $e->get_text());
+        }
+    }
+
+    function test_ref_table()
+    {
+        ob_start();
+?>
+create table abc_ref_def
+(
+    id bigint unsigned not null auto_increment unique,
+    value varchar(100) not null,
+    display_order int
+);
+
+insert into abc_ref_def
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    1,
+    'one',
+    1
+);
+insert into abc_ref_def
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    2,
+    'two',
+    2
+);
+insert into abc_ref_def
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    3,
+    'three',
+    3
+);
+<?
+        $this->assertEquals(
+            ob_get_clean(),
+            tiny_api_Ref_Table::make('abc_ref_def')
+                ->add(1, 'one', 1)
+                ->add(2, 'two', 2)
+                ->add(3, 'three', 3)
                 ->get_definition());
     }
 }

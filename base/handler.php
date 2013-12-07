@@ -54,7 +54,7 @@ class tiny_api_Base_Handler
     // | Public Methods |
     // +----------------+
 
-    public function execute($accessor = '')
+    public function execute($accessor = null)
     {
         $this->secure();
 
@@ -75,7 +75,7 @@ class tiny_api_Base_Handler
             $func = 'put';
         }
 
-        if (!empty($accessor))
+        if (!is_null($accessor))
         {
             $func .= "_$accessor";
         }

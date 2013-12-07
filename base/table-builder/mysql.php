@@ -53,6 +53,18 @@ class tiny_api_Table
         return $this;
     }
 
+    final public function bin($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->binary_type(_tiny_api_Mysql_String_Column::TYPE_BINARY,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function bit($name, $num_bits = null, $not_null = false)
     {
         $this->add_column(
@@ -81,17 +93,39 @@ class tiny_api_Table
         return $this;
     }
 
+    final public function blob($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_BLOB,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function bool($name, $not_null = null)
     {
         $this->tint($name, 1, $not_null);
         return $this;
     }
 
+    final public function char($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->char_type(_tiny_api_Mysql_String_Column::TYPE_CHAR,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function created()
     {
         $this->dtt('date_created', true);
-
-        $this->active_column->default_value('current_timestamp');
 
         return $this;
     }
@@ -163,6 +197,18 @@ class tiny_api_Table
         }
 
         $this->engine = $engine;
+        return $this;
+    }
+
+    final public function enum($name, $list, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->list_type(_tiny_api_Mysql_String_Column::TYPE_ENUM,
+                            $list));
+
+        $this->set_attributes($not_null, null, null);
+
         return $this;
     }
 
@@ -261,6 +307,39 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function lblob($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_LONGBLOB));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function ltext($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->text_type(_tiny_api_Mysql_String_Column::TYPE_LONGTEXT));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function mblob($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_MEDIUMBLOB));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function mint($name,
                                $max_display_width = null,
                                $not_null = false,
@@ -273,6 +352,17 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                                $max_display_width));
 
         $this->set_attributes($not_null, $unsigned, $zero_fill);
+
+        return $this;
+    }
+
+    final public function mtext($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->text_type(_tiny_api_Mysql_String_Column::TYPE_MEDIUMTEXT));
+
+        $this->set_attributes($not_null, null, null);
 
         return $this;
     }
@@ -316,6 +406,18 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function set($name, $list, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->list_type(_tiny_api_Mysql_String_Column::TYPE_SET,
+                            $list));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function sint($name,
                                $max_display_width = null,
                                $not_null = false,
@@ -332,9 +434,32 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function tblob($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->blob_type(_tiny_api_Mysql_String_Column::TYPE_TINYBLOB));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function temp()
     {
         $this->temporary = true;
+        return $this;
+    }
+
+    final public function text($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->text_type(_tiny_api_Mysql_String_Column::TYPE_TEXT,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
+
         return $this;
     }
 
@@ -378,6 +503,26 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function ttext($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->text_type(_tiny_api_Mysql_String_Column::TYPE_TINYTEXT));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function updated()
+    {
+        $this->ts('date_updated', true);
+
+        $this->active_column->on_update('current_timestamp');
+
+        return $this;
+    }
+
     final public function uk($cols = null)
     {
         if (is_null($cols))
@@ -403,6 +548,30 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
             $this->unique_keys[] = $unique_key;
         }
+
+        return $this;
+    }
+
+    final public function vbin($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->binary_type(_tiny_api_Mysql_String_Column::TYPE_VARBINARY,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
+    final public function vchar($name, $length, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_String_Column::make($name)
+                ->char_type(_tiny_api_Mysql_String_Column::TYPE_VARCHAR,
+                            $length));
+
+        $this->set_attributes($not_null, null, null);
 
         return $this;
     }
@@ -778,6 +947,11 @@ extends _tiny_api_Mysql_Column
             $terms[] = 'primary key';
         }
 
+        if (!is_null($this->on_update))
+        {
+            $terms[] = $this->get_on_update_term();
+        }
+
         return implode(' ', $terms);
     }
 
@@ -807,6 +981,245 @@ extends _tiny_api_Mysql_Column
 }
 
 //
+// +-------------------------------+
+// | _tiny_api_Mysql_String_Column |
+// +-------------------------------+
+//
+
+class _tiny_api_Mysql_String_Column
+extends _tiny_api_Mysql_Column
+{
+    const TYPE_CHAR       = 1;
+    const TYPE_VARCHAR    = 2;
+    const TYPE_BINARY     = 3;
+    const TYPE_VARBINARY  = 4;
+    const TYPE_TINYBLOB   = 5;
+    const TYPE_BLOB       = 6;
+    const TYPE_MEDIUMBLOB = 7;
+    const TYPE_LONGBLOB   = 8;
+    const TYPE_TINYTEXT   = 9;
+    const TYPE_TEXT       = 10;
+    const TYPE_MEDIUMTEXT = 11;
+    const TYPE_LONGTEXT   = 12;
+    const TYPE_ENUM       = 13;
+    const TYPE_SET        = 14;
+
+    private $type_id;
+    private $length;
+    private $charset;
+    private $collation;
+    private $list;
+
+    function __construct($name)
+    {
+        parent::__construct($name);
+    }
+
+    static function make($name)
+    {
+        return new self($name);
+    }
+
+    // +----------------+
+    // | Public Methods |
+    // +----------------+
+
+    final public function binary_type($type_id, $length = null)
+    {
+        $this->validate_type_id($type_id);
+
+        $this->type_id = $type_id;
+        $this->length  = $length;
+        return $this;
+    }
+
+    final public function blob_type($type_id, $length = null)
+    {
+        $this->validate_type_id($type_id);
+
+        if ($type_id != self::TYPE_BLOB && !is_null($length))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'you can only specify the length if the column is '
+                        . 'blob');
+        }
+
+        $this->type_id = $type_id;
+        $this->length  = $length;
+        return $this;
+    }
+
+    final public function char_type($type_id, $length = null)
+    {
+        $this->validate_type_id($type_id);
+
+        $this->type_id = $type_id;
+        $this->length  = $length;
+        return $this;
+    }
+
+    final public function charset($charset)
+    {
+        $this->charset = $charset;
+        return $this;
+    }
+
+    final public function collation($name)
+    {
+        $this->collation = $name;
+        return $this;
+    }
+
+    final public function get_definition()
+    {
+        $terms = array($this->name);
+
+        switch ($this->type_id)
+        {
+            case self::TYPE_CHAR:
+                $terms[] = 'char(' . $this->length . ')';
+                break;
+
+            case self::TYPE_VARCHAR:
+                $terms[] = 'varchar(' . $this->length . ')';
+                break;
+
+            case self::TYPE_BINARY:
+                $terms[] = 'binary(' . $this->length . ')';
+                break;
+
+            case self::TYPE_VARBINARY:
+                $terms[] = 'varbinary(' . $this->length . ')';
+                break;
+
+            case self::TYPE_TINYBLOB:
+                $terms[] = 'tinyblob';
+                break;
+
+            case self::TYPE_BLOB:
+                $terms[] = 'blob(' . $this->length . ')';
+                break;
+
+            case self::TYPE_MEDIUMBLOB:
+                $terms[] = 'mediumblob';
+                break;
+
+            case self::TYPE_LONGBLOB:
+                $terms[] = 'longblob';
+                break;
+
+            case self::TYPE_TINYTEXT:
+                $terms[] = 'tinytext';
+                break;
+
+            case self::TYPE_TEXT:
+                $terms[] = 'text(' . $this->length . ')';
+                break;
+
+            case self::TYPE_MEDIUMTEXT:
+                $terms[] = 'mediumtext';
+                break;
+
+            case self::TYPE_LONGTEXT:
+                $terms[] = 'longtext';
+                break;
+
+            case self::TYPE_ENUM:
+                $terms[] = 'enum(' . $this->format_list() . ')';
+                break;
+
+            case self::TYPE_SET:
+                $terms[] = 'set(' . $this->format_list() . ')';
+                break;
+
+            default:
+                throw new tiny_api_Table_Builder_Exception(
+                            'unrecognized string column type '
+                            . "\"" . $this->type_id . "\"");
+        }
+
+        if (!is_null($this->not_null))
+        {
+            $terms[] = 'not null';
+        }
+
+        if (!is_null($this->charset))
+        {
+            $terms[] = 'character set ' . $this->charset;
+        }
+
+        if (!is_null($this->collation))
+        {
+            $terms[] = 'collate ' . $this->collation;
+        }
+
+        return implode(' ', $terms);
+    }
+
+    final public function list_type($type_id, array $values)
+    {
+        $this->validate_type_id($type_id);
+
+        $this->type_id = $type_id;
+        $this->list    = $values;
+        return $this;
+    }
+
+    final public function text_type($type_id, $length = null)
+    {
+        $this->validate_type_id($type_id);
+
+        if ($type_id != self::TYPE_TEXT && !is_null($length))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'you can only specify the length if the column is '
+                        . 'text');
+        }
+
+        $this->type_id = $type_id;
+        $this->length  = $length;
+        return $this;
+    }
+
+    // +-----------------+
+    // | Private Methods |
+    // +-----------------+
+
+    private function format_list()
+    {
+        $list = array();
+        foreach ($this->list as $value)
+        {
+            $list[] = "'$value'";
+        }
+
+        return implode(', ', $list);
+    }
+
+    private function validate_type_id($type_id)
+    {
+        if (!in_array($type_id, array(self::TYPE_CHAR,
+                                      self::TYPE_VARCHAR,
+                                      self::TYPE_BINARY,
+                                      self::TYPE_VARBINARY,
+                                      self::TYPE_TINYBLOB,
+                                      self::TYPE_BLOB,
+                                      self::TYPE_MEDIUMBLOB,
+                                      self::TYPE_LONGBLOB,
+                                      self::TYPE_TINYTEXT,
+                                      self::TYPE_TEXT,
+                                      self::TYPE_MEDIUMTEXT,
+                                      self::TYPE_LONGTEXT,
+                                      self::TYPE_ENUM,
+                                      self::TYPE_SET)))
+        {
+            throw new tiny_api_Table_Builder_Exception('the type ID provided '
+                                                       . 'was invalid');
+        }
+    }
+}
+
+//
 // +------------------------+
 // | _tiny_api_Mysql_Column |
 // +------------------------+
@@ -819,6 +1232,7 @@ class _tiny_api_Mysql_Column
     protected $unique;
     protected $default;
     protected $primary_key;
+    protected $on_update;
 
     function __construct($name)
     {
@@ -847,6 +1261,11 @@ class _tiny_api_Mysql_Column
                     $this->default);
     }
 
+    final public function get_on_update_term()
+    {
+        return empty($this->on_update) ? null : 'on update ' . $this->on_update;
+    }
+
     final public function get_name()
     {
         return $this->name;
@@ -855,6 +1274,12 @@ class _tiny_api_Mysql_Column
     final public function not_null()
     {
         $this->not_null = true;
+        return $this;
+    }
+
+    final public function on_update($value)
+    {
+        $this->on_update = $value;
         return $this;
     }
 
@@ -868,6 +1293,119 @@ class _tiny_api_Mysql_Column
     {
         $this->unique = true;
         return $this;
+    }
+}
+
+//
+// +--------------------+
+// | tiny_api_Ref_Table |
+// +--------------------+
+//
+
+class tiny_api_Ref_Table
+{
+    private $name;
+    private $values;
+    private $display_orders;
+
+    function __construct($name)
+    {
+        $this->validate_name($name);
+
+        $this->name           = $name;
+        $this->values         = array();
+        $this->display_orders = array();
+    }
+
+    static function make($name)
+    {
+        return new self($name);
+    }
+
+    final public function add($id, $value, $display_order = null)
+    {
+        if (!is_int($id))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'the ID value provided must be an integer');
+        }
+
+        if (array_key_exists($id, $this->values))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        "the ID \"$id\" is already defined");
+        }
+
+        if (array_key_exists($display_order, $this->display_orders))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        "the display order \"$display_order\" is already "
+                        . "defined");
+        }
+
+        $this->values[ $id ] = array($value, $display_order);
+        $this->display_orders[ $display_order ] = true;
+
+        return $this;
+    }
+
+    final public function get_definition()
+    {
+        if (empty($this->values))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'no values were defined');
+        }
+
+        $table = tiny_api_Table::make($this->name)
+                    ->id()
+                    ->vchar('value', 100, true)
+                    ->int('display_order');
+
+        ob_start();
+        foreach ($this->values as $id => $data)
+        {
+            list($value, $display_order) = $data;
+?>
+insert into <?= $this->name . "\n" ?>
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    <?= $id ?>,
+    '<?= $value ?>',
+    <?= (!empty($display_order) ? $display_order : 'null') . "\n" ?>
+);
+<?
+        }
+
+        $inserts = ob_get_clean();
+
+        ob_start();
+?>
+<?= $table->get_definition() ?>
+
+
+<?= $inserts ?>
+<?
+        return ob_get_clean();
+    }
+
+    // +-----------------+
+    // | Private Methods |
+    // +-----------------+
+
+    private function validate_name($name)
+    {
+        if (!preg_match('/^(\w)+_ref_/', $name))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'the name of the reference table must contain '
+                        . '"_ref_"');
+        }
     }
 }
 ?>
