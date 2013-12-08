@@ -54,6 +54,7 @@ PHP CONFIGURATION
 
         0.0/
         base/
+        bin/
         conf/
         dispatcher.php
         LICENSE
@@ -69,9 +70,11 @@ PHP CONFIGURATION
 REST API URL SCHEME
 ===================
 
-    - https://[domain]/[version number]/[entity]{/accessor}
+    - https://[domain]/[version number]/[entity]{/accessor}{/id}
 
       Examples:
 
         https://api.your-domain.com/1.0/user
         https://api.your-domain.com/1.1/user/public-profile
+        https://api.your-domain.com/1.1/user/1234
+        https://api.your-domain.com/2.0/store/manager/5678

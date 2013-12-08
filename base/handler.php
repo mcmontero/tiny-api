@@ -39,6 +39,7 @@ require_once 'base/data-store/provider.php';
 class tiny_api_Base_Handler
 {
     protected $dsh;
+    protected $id;
 
     function __construct()
     {
@@ -54,9 +55,11 @@ class tiny_api_Base_Handler
     // | Public Methods |
     // +----------------+
 
-    public function execute($accessor = null)
+    public function execute($accessor = null, $id = null)
     {
         $this->secure();
+
+        $this->id = $id;
 
         if ($_SERVER[ 'REQUEST_METHOD' ] == 'DELETE')
         {

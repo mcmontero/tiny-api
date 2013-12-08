@@ -41,7 +41,13 @@ if (count($temp) < 2)
     exit(1);
 }
 
-@list($junk, $version, $entity, $accessor) = $temp;
+//
+// Determine the components of this request (version number, entity, accessor,
+// ID) and validate them.
+//
+
+$version = $temp[ 1 ];
+$entity  = $temp[ 2 ];
 if (!preg_match('/^[0-9\.]+$/', $version))
 {
     if ($version == 'favicon.ico' &&
@@ -64,6 +70,28 @@ if (!preg_match('/^[0-9\.]+$/', $version))
     }
 }
 
+$accessor = null;
+$id       = null;
+if (!empty($temp[ 3 ]))
+{
+    if (preg_match('/^[0-9]+$/', $temp[ 3 ]))
+    {
+        $id = intval($temp[ 3 ]);
+    }
+    else
+    {
+        $accessor = $temp[ 3 ];
+    }
+}
+
+if (!empty($temp[ 4 ]))
+{
+    if (preg_match('/^[0-9]+$/', $temp[ 4 ]))
+    {
+        $id = intval($temp[ 4 ]);
+    }
+}
+
 //
 // Find and create the handler.
 //
@@ -78,7 +106,7 @@ require_once $include_file;
 //
 
 $class    = new $class_name();
-$response = $class->execute($accessor);
+$response = $class->execute($accessor, $id);
 
 if (!($response instanceof tiny_api_Base_Response))
 {
