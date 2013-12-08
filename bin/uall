@@ -103,7 +103,7 @@ function _uall_pretty_print_string_equality_failures(tiny_api_Cli $cli, $output)
                 explode(
                     "\n",
                     preg_replace(
-                        '/"$/msi', '',
+                        '/\'|"$/msi', '',
                         preg_replace(
                             '/^[ ]+got: [\'|"]?/', '',
                             preg_replace(
@@ -113,7 +113,7 @@ function _uall_pretty_print_string_equality_failures(tiny_api_Cli $cli, $output)
                 explode(
                     "\n",
                     preg_replace(
-                        '/"$/msi', '',
+                        '/\'|"$/msi', '',
                         preg_replace(
                             '/^[ ]+expected: [\'|"]?/', '',
                             preg_replace(
