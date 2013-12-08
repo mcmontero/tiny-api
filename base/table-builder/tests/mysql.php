@@ -1032,5 +1032,157 @@ values
                 ->add(3, 'three', 3)
                 ->get_definition());
     }
+
+    function test_table_ai_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->ai();
+
+            $this->fail('Was able to set a column as auto-increment even '
+                        . 'though no column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::ai" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_def_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->def('def');
+
+            $this->fail('Was able to set a default value for a column even '
+                        . 'though no column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::def" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_pk_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->pk();
+
+            $this->fail('Was able to set a column as primary key even though '
+                        . 'no column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::pk" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_uk_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->uk();
+
+            $this->fail('Was able to set a column as a unique key even though '
+                        . 'no column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::uk" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_fk_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->fk('def');
+
+            $this->fail('Was able to set a column as a foreign key even though '
+                        . 'no column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::fk" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_foreign_key_and_dependencies_active_column()
+    {
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null auto_increment unique,
+    constraint foreign key abc_0_fk (id) references def on delete cascade
+);
+<?
+        $expected = trim(ob_get_clean());
+        $table    = tiny_api_Table::make('abc')->id()->fk('def');
+
+        $this->assertEquals($expected, $table->get_definition());
+
+        $deps = $table->get_dependencies();
+        $this->assertTrue(is_array($deps));
+        $this->assertEquals(1, count($deps));
+        $this->assertTrue(in_array('def', $deps));
+    }
+
+    function test_table_foreign_key_full_definition()
+    {
+        ob_start();
+?>
+create table abc
+(
+    col_a int,
+    col_b int,
+    constraint foreign key abc_0_fk (col_a, col_b) references def (col_c, col_d)
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc')
+                ->int('col_a')
+                ->int('col_b')
+                ->fk('def',
+                     false,
+                     array('col_a', 'col_b'),
+                     array('col_c', 'col_d'))
+                ->get_definition());
+    }
+
+    function test_table_foreign_key_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->fk('def', true, array('ghi'));
+
+            $this->fail('Was able to create a foreign key even though the '
+                        . 'column provided did not exist.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'column "ghi" cannot be used in foreign key because it has '
+                . 'not been defined',
+                $e->get_text());
+        }
+    }
 }
 ?>

@@ -5,6 +5,119 @@
 // +------------------------------------------------------------+
 
 //
+// +--------------------+
+// | tiny_api_Ref_Table |
+// +--------------------+
+//
+
+class tiny_api_Ref_Table
+{
+    private $name;
+    private $values;
+    private $display_orders;
+
+    function __construct($name)
+    {
+        $this->validate_name($name);
+
+        $this->name           = $name;
+        $this->values         = array();
+        $this->display_orders = array();
+    }
+
+    static function make($name)
+    {
+        return new self($name);
+    }
+
+    final public function add($id, $value, $display_order = null)
+    {
+        if (!is_int($id))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'the ID value provided must be an integer');
+        }
+
+        if (array_key_exists($id, $this->values))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        "the ID \"$id\" is already defined");
+        }
+
+        if (array_key_exists($display_order, $this->display_orders))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        "the display order \"$display_order\" is already "
+                        . "defined");
+        }
+
+        $this->values[ $id ] = array($value, $display_order);
+        $this->display_orders[ $display_order ] = true;
+
+        return $this;
+    }
+
+    final public function get_definition()
+    {
+        if (empty($this->values))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'no values were defined');
+        }
+
+        $table = tiny_api_Table::make($this->name)
+                    ->id()
+                    ->vchar('value', 100, true)
+                    ->int('display_order');
+
+        ob_start();
+        foreach ($this->values as $id => $data)
+        {
+            list($value, $display_order) = $data;
+?>
+insert into <?= $this->name . "\n" ?>
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    <?= $id ?>,
+    '<?= $value ?>',
+    <?= (!empty($display_order) ? $display_order : 'null') . "\n" ?>
+);
+<?
+        }
+
+        $inserts = ob_get_clean();
+
+        ob_start();
+?>
+<?= $table->get_definition() ?>
+
+
+<?= $inserts ?>
+<?
+        return ob_get_clean();
+    }
+
+    // +-----------------+
+    // | Private Methods |
+    // +-----------------+
+
+    private function validate_name($name)
+    {
+        if (!preg_match('/^(\w)+_ref_/', $name))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'the name of the reference table must contain '
+                        . '"_ref_"');
+        }
+    }
+}
+
+//
 // +----------------+
 // | tiny_api_Table |
 // +----------------+
@@ -20,15 +133,19 @@ class tiny_api_Table
     private $temporary;
     private $primary_key;
     private $unique_keys;
+    private $foreign_keys;
+    private $dependencies;
 
     function __construct($name)
     {
-        $this->name        = $name;
-        $this->columns     = array();
-        $this->map         = array();
-        $this->temporary   = false;
-        $this->primary_key = array();
-        $this->unique_keys = array();
+        $this->name         = $name;
+        $this->columns      = array();
+        $this->map          = array();
+        $this->temporary    = false;
+        $this->primary_key  = array();
+        $this->unique_keys  = array();
+        $this->foreign_keys = array();
+        $this->dependencies = array();
     }
 
     static function make($name)
@@ -42,6 +159,8 @@ class tiny_api_Table
 
     final public function ai()
     {
+        $this->assert_active_column_is_set(__METHOD__);
+
         if (!($this->active_column instanceof _tiny_api_Mysql_Numeric_Column))
         {
             throw new tiny_api_Table_Builder_Exception(
@@ -149,6 +268,8 @@ class tiny_api_Table
 
     final public function def($default)
     {
+        $this->assert_active_column_is_set(__METHOD__);
+
         $this->active_column->default_value($default);
         return $this;
     }
@@ -212,6 +333,40 @@ class tiny_api_Table
         return $this;
     }
 
+    final public function fk($parent_table,
+                             $on_delete_cascade = true,
+                             $cols = null,
+                             $parent_cols = null)
+    {
+        if (is_null($cols))
+        {
+            $this->assert_active_column_is_set(__METHOD__);
+            $cols = array($this->active_column->get_name());
+        }
+
+        $num_cols = count($cols);
+        for ($i = 0; $i < $num_cols; $i++)
+        {
+            if (!array_key_exists($cols[ $i ], $this->map))
+            {
+                throw new tiny_api_Table_Builder_Exception(
+                            "column \"" . $cols[ $i ] . "\" cannot be used in "
+                            . 'foreign key because it has not been defined');
+            }
+        }
+
+        $this->foreign_keys[] = array(
+            $parent_table,
+            (bool)$on_delete_cascade,
+            $cols,
+            $parent_cols,
+        );
+
+        $this->dependencies[] = $parent_table;
+
+        return $this;
+    }
+
     final public function fixed($name,
                                 $precision = null,
                                 $scale = null,
@@ -266,6 +421,25 @@ class tiny_api_Table
             }
         }
 
+        if (!empty($this->foreign_keys))
+        {
+            foreach ($this->foreign_keys as $index => $foreign_key)
+            {
+                list($parent_table, $on_delete_cascade, $cols, $parent_cols) =
+                                    $foreign_key;
+
+                $terms[] = '    constraint foreign key '
+                           . $this->name
+                           . "_$index"
+                           . '_fk ('
+                           . implode(', ', $cols)
+                           . ") references $parent_table"
+                           . (!empty($parent_cols) ?
+                                ' (' . implode(', ', $parent_cols) . ')' : '')
+                           . ($on_delete_cascade ? ' on delete cascade' : '');
+            }
+        }
+
         if (!empty($this->primary_key))
         {
             $terms[] = '    primary key '
@@ -283,6 +457,11 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 )<?= !is_null($this->engine) ? ' engine = ' . $this->engine . ';' : ';' ?>
 <?
         return ob_get_clean();
+    }
+
+    final public function get_dependencies()
+    {
+        return $this->dependencies;
     }
 
     final public function id()
@@ -371,6 +550,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
     {
         if (is_null($cols))
         {
+            $this->assert_active_column_is_set(__METHOD__);
             $this->active_column->primary_key();
         }
         else
@@ -527,6 +707,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
     {
         if (is_null($cols))
         {
+            $this->assert_active_column_is_set(__METHOD__);
             $this->active_column->unique();
         }
         else
@@ -599,6 +780,17 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         $this->columns[]     = $this->active_column;
 
         return $this;
+    }
+
+    private function assert_active_column_is_set($caller)
+    {
+        if (is_null($this->active_column) ||
+            !($this->active_column instanceof _tiny_api_Mysql_Column))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        "call to \"$caller\" invalid until a column is "
+                        . 'defined');
+        }
     }
 
     private function set_attributes($not_null, $unsigned, $zero_fill)
@@ -1293,119 +1485,6 @@ class _tiny_api_Mysql_Column
     {
         $this->unique = true;
         return $this;
-    }
-}
-
-//
-// +--------------------+
-// | tiny_api_Ref_Table |
-// +--------------------+
-//
-
-class tiny_api_Ref_Table
-{
-    private $name;
-    private $values;
-    private $display_orders;
-
-    function __construct($name)
-    {
-        $this->validate_name($name);
-
-        $this->name           = $name;
-        $this->values         = array();
-        $this->display_orders = array();
-    }
-
-    static function make($name)
-    {
-        return new self($name);
-    }
-
-    final public function add($id, $value, $display_order = null)
-    {
-        if (!is_int($id))
-        {
-            throw new tiny_api_Table_Builder_Exception(
-                        'the ID value provided must be an integer');
-        }
-
-        if (array_key_exists($id, $this->values))
-        {
-            throw new tiny_api_Table_Builder_Exception(
-                        "the ID \"$id\" is already defined");
-        }
-
-        if (array_key_exists($display_order, $this->display_orders))
-        {
-            throw new tiny_api_Table_Builder_Exception(
-                        "the display order \"$display_order\" is already "
-                        . "defined");
-        }
-
-        $this->values[ $id ] = array($value, $display_order);
-        $this->display_orders[ $display_order ] = true;
-
-        return $this;
-    }
-
-    final public function get_definition()
-    {
-        if (empty($this->values))
-        {
-            throw new tiny_api_Table_Builder_Exception(
-                        'no values were defined');
-        }
-
-        $table = tiny_api_Table::make($this->name)
-                    ->id()
-                    ->vchar('value', 100, true)
-                    ->int('display_order');
-
-        ob_start();
-        foreach ($this->values as $id => $data)
-        {
-            list($value, $display_order) = $data;
-?>
-insert into <?= $this->name . "\n" ?>
-(
-    id,
-    value,
-    display_order
-)
-values
-(
-    <?= $id ?>,
-    '<?= $value ?>',
-    <?= (!empty($display_order) ? $display_order : 'null') . "\n" ?>
-);
-<?
-        }
-
-        $inserts = ob_get_clean();
-
-        ob_start();
-?>
-<?= $table->get_definition() ?>
-
-
-<?= $inserts ?>
-<?
-        return ob_get_clean();
-    }
-
-    // +-----------------+
-    // | Private Methods |
-    // +-----------------+
-
-    private function validate_name($name)
-    {
-        if (!preg_match('/^(\w)+_ref_/', $name))
-        {
-            throw new tiny_api_Table_Builder_Exception(
-                        'the name of the reference table must contain '
-                        . '"_ref_"');
-        }
     }
 }
 ?>
