@@ -135,6 +135,7 @@ class tiny_api_Table
     private $unique_keys;
     private $foreign_keys;
     private $dependencies;
+    private $indexes;
 
     function __construct($name)
     {
@@ -146,6 +147,7 @@ class tiny_api_Table
         $this->unique_keys  = array();
         $this->foreign_keys = array();
         $this->dependencies = array();
+        $this->indexes      = array();
     }
 
     static function make($name)
@@ -459,6 +461,24 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return ob_get_clean();
     }
 
+    final public function get_index_definitions()
+    {
+        $indexes = array();
+        foreach ($this->indexes as $index => $cols)
+        {
+            $indexes[] = 'create index '
+                         . $this->name
+                         . "_$index"
+                         . '_idx on '
+                         . $this->name
+                         . ' ('
+                         . implode(', ', $cols)
+                         . ')';
+        }
+
+        return $indexes;
+    }
+
     final public function get_dependencies()
     {
         return $this->dependencies;
@@ -467,6 +487,38 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
     final public function id()
     {
         $this->serial('id');
+        return $this;
+    }
+
+    final public function idx($cols = null)
+    {
+        if (is_null($cols))
+        {
+            $this->assert_active_column_is_set(__METHOD__);
+            $cols = array($this->active_column->get_name());
+        }
+
+        $num_cols = count($cols);
+        for ($i = 0; $i < $num_cols; $i++)
+        {
+            @list($col, $asc_desc) = explode(' ', $cols[ $i ]);
+            if (!array_key_exists($col, $this->map))
+            {
+                throw new tiny_api_Table_Builder_Exception(
+                            "column \"$col\" cannot be used in index because "
+                            . 'it has not been defined');
+            }
+
+            if (!empty($asc_desc) && $asc_desc != 'asc' && $asc_desc != 'desc')
+            {
+                throw new tiny_api_Table_Builder_Exception(
+                            'columns can only be modified using "asc" or '
+                            . '"desc"');
+            }
+        }
+
+        $this->indexes[] = $cols;
+
         return $this;
     }
 

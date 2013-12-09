@@ -1184,5 +1184,73 @@ create table abc
                 $e->get_text());
         }
     }
+
+    function test_table_idx_active_column_is_set()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->idx();
+
+            $this->fail('Was able to set a column as an index even though no '
+                        . 'column was defined.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'call to "tiny_api_Table::idx" invalid until a column is '
+                . 'defined',
+                $e->get_text());
+        }
+    }
+
+    function test_table_index_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('abc')->idx(array('def'));
+
+            $this->fail('Was able to create an index even though the column '
+                        . 'provided did not exist.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'column "def" cannot be used in index because it has not been '
+                . 'defined',
+                $e->get_text());
+        }
+
+        try
+        {
+            tiny_api_Table::make('abc')->int('col_a')->idx(array('col_a x'));
+
+            $this->fail('Was able to create an index with an invalid column '
+                        . 'modifier for asc/desc.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('columns can only be modified using "asc" or '
+                                . '"desc"',
+                                $e->get_text());
+        }
+    }
+
+    function test_table_getting_index_definitions()
+    {
+        $table   = tiny_api_Table::make('abc')
+                    ->int('col_a')
+                    ->int('col_b')
+                        ->idx()
+                    ->idx(array('col_a asc', 'col_b desc'));
+        $indexes = $table->get_index_definitions();
+
+        $this->assertTrue(is_array($indexes));
+        $this->assertEquals(2, count($indexes));
+        $this->assertEquals('create index abc_0_idx on abc (col_b)',
+                            $indexes[ 0 ]);
+        $this->assertEquals('create index abc_1_idx on abc (col_a asc, '
+                            . 'col_b desc)',
+                            $indexes[ 1 ]);
+    }
 }
 ?>
