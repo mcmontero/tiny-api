@@ -24,13 +24,13 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/utilities/data-armor.php';
+require_once 'base/services/data-armor.php';
 
 // +------------------------------------------------------------+
 // | TESTS                                                      |
 // +------------------------------------------------------------+
 
-class base_Test_Data_Armor
+class services_Test_Data_Armor
 extends PHPUnit_Framework_TestCase
 {
     function test_data_armor_instantiation_exceptions()
