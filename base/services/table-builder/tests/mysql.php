@@ -24,7 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/table-builder/mysql.php';
+require_once 'base/services/table-builder/mysql.php';
 
 // +------------------------------------------------------------+
 // | TESTS                                                      |
