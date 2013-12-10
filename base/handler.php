@@ -43,7 +43,7 @@ class tiny_api_Base_Handler
 
     function __construct()
     {
-        $this->dsh = tiny_api_Data_Store_Provider::make()
+        $this->dsh = tiny_api_Data_Store_Provider::get_instance()
                         ->get_data_store_handle();
         if (is_null($this->dsh))
         {

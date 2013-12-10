@@ -27,6 +27,16 @@
 require_once 'base/data-store/memcache.php';
 
 // +------------------------------------------------------------+
+// | PUBLIC FUNCTIONS                                           |
+// +------------------------------------------------------------+
+
+function dsh()
+{
+    return tiny_api_Data_Store_Provider::get_instance()
+            ->get_data_store_handle();
+}
+
+// +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
 
@@ -168,6 +178,7 @@ class tiny_api_Base_Data_Store
 
 class tiny_api_Data_Store_Provider
 {
+    private static $instance;
     private $tiny_api_conf;
     private $dsh;
 
@@ -177,9 +188,14 @@ class tiny_api_Data_Store_Provider
         $this->tiny_api_conf = $__tiny_api_conf__;
     }
 
-    public static function make()
+    static function get_instance()
     {
-        return new self();
+        if (!isset(self::$instance))
+        {
+            self::$instance = new tiny_api_Data_Store_Provider();
+        }
+
+        return self::$instance;
     }
 
     // +----------------+
