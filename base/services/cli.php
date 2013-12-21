@@ -82,13 +82,19 @@ function tiny_api_cli_main(tiny_api_Cli_Conf $conf, $main)
 class tiny_api_Cli_Conf
 {
     private $options;
-    private $description;
     private $args;
+    private $description;
+    private $conf;
+    private $arg_indexes;
+    private $arg_index;
 
     function __construct()
     {
-        $this->options = array();
-        $this->args    = array();
+        $this->arg_indexes = array();
+        $this->arg_index   = 0;
+        $this->conf        = array();
+
+        $this->parse_command_line_args();
     }
 
     static function make()
@@ -99,6 +105,22 @@ class tiny_api_Cli_Conf
     // +----------------+
     // | Public Methods |
     // +----------------+
+
+    final public function add_arg($name, $description, $required)
+    {
+        global $argc;
+        global $argv;
+
+        if (preg_match('/^--/', $name))
+        {
+            throw new tiny_api_Cli_Exception(
+                        'argument names should not be prefixed with "--"');
+        }
+
+        $this->conf[ $name ]        = array($description, $required);
+        $this->arg_indexes[ $name ] = $this->arg_index++;
+        return $this;
+    }
 
     final public function add_description($description)
     {
@@ -113,53 +135,70 @@ class tiny_api_Cli_Conf
             $name = "--$name";
         }
 
-        $this->options[ $name ] = array($description, (bool)$required);
+        $this->conf[ $name ] = array($description, (bool)$required);
         return $this;
     }
 
     final public function get_arg($name)
     {
-        if (!array_key_exists($name, $this->options))
+        if (!array_key_exists($name, $this->conf))
         {
             throw new tiny_api_Cli_Exception(
                 "an option named \"$name\" has not been configured");
         }
 
-        return array_key_exists($name, $this->args) ?
-                $this->args[ $name ] : null;
-    }
-
-    final public function parse_options()
-    {
-        global $argv;
-
-        $num_argv = count($argv);
-        for ($i = 1; $i < $num_argv; $i++)
+        if (array_key_exists($name, $this->args))
         {
-            @list($option, $value) = explode('=', $argv[ $i ]);
-            if ($option == '--help')
-            {
-                $this->usage();
-            }
-
-            $this->args[ $option ] = (empty($value) ? true : $value);
+            return $this->args[ $name ];
+        }
+        else if (array_key_exists($name, $this->options))
+        {
+            return $this->options[ $name ];
         }
 
-        foreach ($this->options as $arg => $conf)
-        {
-            list($description, $required) = $conf;
-
-            if ($required && !array_key_exists($arg, $this->args))
-            {
-                $this->usage();
-            }
-        }
+        return null;
     }
 
     final public function unlimited_memory()
     {
         ini_set('memory_limit', -1);
         return $this;
+    }
+
+    final public function validate_usage()
+    {
+        if (array_key_exists('--help', $this->options))
+        {
+            $this->usage();
+        }
+
+        foreach ($this->conf as $name => $data)
+        {
+            list($description, $required) = $data;
+
+            if ($required)
+            {
+                if (preg_match('/^--/', $name))
+                {
+                    if (!array_key_exists($name, $this->options) ||
+                        empty($this->options[ $name ]))
+                    {
+                        $this->usage();
+                    }
+                }
+                else
+                {
+                    $arg_index = $this->arg_indexes[ $name ];
+                    if (!array_key_exists($arg_index, $this->args) ||
+                        empty($this->args[ $arg_index ]))
+                    {
+                        $this->usage();
+                    }
+                    $this->args[ $name ] = $this->args[ $arg_index ];
+                    unset($this->args[ $arg_index ]);
+                }
+            }
+        }
     }
 
     // +-----------------+
@@ -188,6 +227,35 @@ class tiny_api_Cli_Conf
         return $text;
     }
 
+    private function parse_command_line_args()
+    {
+        global $argc;
+        global $argv;
+
+        $this->options = array();
+        $this->args    = array();
+
+        for ($i = 1; $i < $argc; $i++)
+        {
+            if (preg_match('/^--/', $argv[ $i ]))
+            {
+                if (preg_match('/=/', $argv[ $i ]))
+                {
+                    list($name, $value)     = explode('=', $argv[ $i ]);
+                    $this->options[ $name ] = $value;
+                }
+                else
+                {
+                    $this->options[ $argv[ $i ] ] = true;
+                }
+            }
+            else
+            {
+                $this->args[] = $argv[ $i ];
+            }
+        }
+    }
+
     private function usage()
     {
         global $argv;
@@ -201,22 +269,27 @@ class tiny_api_Cli_Conf
         if (!empty($this->description))
         {
             print $this->format_description('    ' . $this->description,
-                                            65, '    ');
-            print "\n\n";
+                                            65, '    ')
+                  . "\n";
+
+            if (!empty($this->conf))
+            {
+                print "\n";
+            }
         }
 
-        foreach ($this->options as $arg => $conf)
+        foreach ($this->conf as $arg => $data)
         {
-            list($description, $required) = $conf;
+            list($description, $required) = $data;
 
-            printf("%s%-30s%-10s%-33s\n\n",
+            printf("%s%-25s%-5s%-43s\n\n",
                    '    ',
                    $arg,
-                   ($required ? 'required' : ''),
+                   ($required ? '(r)' : ''),
                    $this->format_description(
                             $description,
-                            28,
-                            tiny_api_cli_repeat_char(' ', 44)));
+                            33,
+                            tiny_api_cli_repeat_char(' ', 34)));
         }
 
         exit(0);
@@ -252,7 +325,7 @@ class tiny_api_Cli
         $this->started       = time();
         $this->enable_status = false;
 
-        $this->conf->parse_options();
+        $this->conf->validate_usage();
         $this->pid_lock();
 
         $this->enable_status = true;
