@@ -12,22 +12,24 @@
 
 class tiny_api_Ref_Table
 {
+    private $db_name;
     private $name;
     private $values;
     private $display_orders;
 
-    function __construct($name)
+    function __construct($db_name, $name)
     {
         $this->validate_name($name);
 
+        $this->db_name        = $db_name;
         $this->name           = $name;
         $this->values         = array();
         $this->display_orders = array();
     }
 
-    static function make($name)
+    static function make($db_name, $name)
     {
-        return new self($name);
+        return new self($db_name, $name);
     }
 
     final public function add($id, $value, $display_order = null)
@@ -57,6 +59,11 @@ class tiny_api_Ref_Table
         return $this;
     }
 
+    final public function get_db_name()
+    {
+        return $this->db_name;
+    }
+
     final public function get_definition()
     {
         if (empty($this->values))
@@ -65,7 +72,7 @@ class tiny_api_Ref_Table
                         'no values were defined');
         }
 
-        $table = tiny_api_Table::make($this->name)
+        $table = tiny_api_Table::make($this->db_name, $this->name)
                     ->id()
                     ->vchar('value', 100, true)
                     ->int('display_order');
@@ -125,6 +132,7 @@ values
 
 class tiny_api_Table
 {
+    private $db_name;
     private $name;
     private $engine;
     private $columns;
@@ -136,9 +144,11 @@ class tiny_api_Table
     private $foreign_keys;
     private $dependencies;
     private $indexes;
+    private $rows;
 
-    function __construct($name)
+    function __construct($db_name, $name)
     {
+        $this->db_name      = $db_name;
         $this->name         = $name;
         $this->columns      = array();
         $this->map          = array();
@@ -148,11 +158,12 @@ class tiny_api_Table
         $this->foreign_keys = array();
         $this->dependencies = array();
         $this->indexes      = array();
+        $this->rows         = array();
     }
 
-    static function make($name)
+    static function make($db_name, $name)
     {
-        return new self($name);
+        return new self($db_name, $name);
     }
 
     // +----------------+
@@ -395,6 +406,11 @@ class tiny_api_Table
         return $this;
     }
 
+    final public function get_db_name()
+    {
+        return $this->db_name;
+    }
+
     final public function get_definition()
     {
         if (count($this->columns) == 0)
@@ -435,10 +451,11 @@ class tiny_api_Table
                            . "_$index"
                            . '_fk ('
                            . implode(', ', $cols)
-                           . ") references $parent_table"
+                           . ")\n            references $parent_table"
                            . (!empty($parent_cols) ?
                                 ' (' . implode(', ', $parent_cols) . ')' : '')
-                           . ($on_delete_cascade ? ' on delete cascade' : '');
+                           . ($on_delete_cascade ?
+                                "\n             on delete cascade" : '');
             }
         }
 
@@ -469,14 +486,45 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
             $indexes[] = 'create index '
                          . $this->name
                          . "_$index"
-                         . '_idx on '
+                         . "_idx\n          on "
                          . $this->name
-                         . ' ('
+                         . "\n             ("
                          . implode(', ', $cols)
                          . ')';
         }
 
         return $indexes;
+    }
+
+    final public function get_insert_statements()
+    {
+        if (empty($this->rows))
+        {
+            return null;
+        }
+
+        foreach ($this->rows as $row)
+        {
+            ob_start();
+
+            print 'insert into ' . $this->name . "\n(\n";
+
+            $columns = array();
+            foreach ($this->columns as $column)
+            {
+                $columns[] = '    ' . $column->get_name();
+            }
+            print implode(",\n", $columns);
+
+            print "\n)\nvalues\n(\n";
+
+            $values = array();
+            foreach ($row as $value)
+            {
+                $values[] = "    '$value'";
+            }
+            print implode(",\n", $values) . "\n);\n\n";
+        }
     }
 
     final public function get_dependencies()
@@ -518,6 +566,26 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         }
 
         $this->indexes[] = $cols;
+
+        return $this;
+    }
+
+    final public function ins()
+    {
+        $num_table_cols = count($this->columns);
+        $args           = func_get_args();
+        foreach ($args as $row)
+        {
+            $num_cols = count($row);
+            if ($num_cols != $num_table_cols)
+            {
+                throw new tiny_api_Table_Builder_Exception(
+                            "this table has $num_table_cols column(s) but "
+                            . "your insert data has $num_cols");
+            }
+
+            $this->rows[] = $row;
+        }
 
         return $this;
     }
@@ -683,7 +751,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
-    final public function text($name, $length, $not_null = false)
+    final public function text($name, $length = null, $not_null = false)
     {
         $this->add_column(
             _tiny_api_Mysql_String_Column::make($name)
@@ -1357,7 +1425,9 @@ extends _tiny_api_Mysql_Column
                 break;
 
             case self::TYPE_TEXT:
-                $terms[] = 'text(' . $this->length . ')';
+                $terms[] = 'text'
+                           . (!empty($this->length) ?
+                                '(' . $this->length . ')' : '');
                 break;
 
             case self::TYPE_MEDIUMTEXT:

@@ -37,7 +37,7 @@ extends PHPUnit_Framework_TestCase
     {
         try
         {
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->bit('def')
                 ->bint('def');
 
@@ -186,7 +186,7 @@ extends PHPUnit_Framework_TestCase
     {
         try
         {
-            tiny_api_Table::make('abc')->engine('def');
+            tiny_api_Table::make('db', 'abc')->engine('def');
 
             $this->fail('Was able to set the engine to an invalid value.');
         }
@@ -200,7 +200,7 @@ extends PHPUnit_Framework_TestCase
     {
         try
         {
-            tiny_api_Table::make('abc')->get_definition();
+            tiny_api_Table::make('db', 'abc')->get_definition();
 
             $this->fail('Was able to get table definition even though no '
                         . 'columns were provided.');
@@ -224,7 +224,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->engine('InnoDB')
                 ->id()
                 ->get_definition());
@@ -243,7 +243,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->engine('MyISAM')
                 ->id()
                 ->bool('def')
@@ -263,7 +263,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->int('ghi', null, false, true, true)
                 ->get_definition());
@@ -283,7 +283,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->int('ghi')
                     ->uk()
@@ -305,7 +305,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                     ->pk()
                 ->get_definition());
@@ -322,7 +322,7 @@ create temporary table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->temp()
                 ->id()
                 ->get_definition());
@@ -332,7 +332,7 @@ create temporary table abc
     {
         try
         {
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->pk(array('def', 'ghi'))
                 ->get_definition();
@@ -363,7 +363,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->int('ghi')
                 ->pk(array('def', 'ghi'))
@@ -374,7 +374,7 @@ create table abc
     {
         try
         {
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->uk(array('def', 'ghi'))
                 ->get_definition();
@@ -406,7 +406,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->int('ghi')
                 ->int('jkl')
@@ -429,7 +429,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('def')
                 ->int('ghi')
                 ->int('jkl')
@@ -544,7 +544,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->dt('def', true)
                 ->dtt('ghi', true)
                 ->ts('jkl', true)
@@ -568,7 +568,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->dt('def')
                 ->dtt('ghi')
                 ->ts('jkl')
@@ -606,7 +606,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->id()
                 ->created()
                 ->get_definition());
@@ -633,7 +633,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->id()
                 ->updated()
                 ->get_definition());
@@ -897,7 +897,7 @@ create table abc
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->char('def', 15, true)
                 ->vchar('ghi', 16, true)
                 ->bin('jkl', 17, true)
@@ -919,7 +919,7 @@ create table abc
     {
         try
         {
-            tiny_api_Ref_Table::make('abc');
+            tiny_api_Ref_Table::make('db', 'abc');
 
             $this->fail('Was able to create a reference table even though '
                         . 'the table name was non-standard.');
@@ -933,7 +933,7 @@ create table abc
 
         try
         {
-            tiny_api_Ref_Table::make('abc_ref_def')->add('a', 'b');
+            tiny_api_Ref_Table::make('db', 'abc_ref_def')->add('a', 'b');
 
             $this->fail('Was able to create a reference table even though '
                         . 'the ID provided was not an integer.');
@@ -947,7 +947,7 @@ create table abc
 
         try
         {
-            tiny_api_Ref_Table::make('abc_ref_def')
+            tiny_api_Ref_Table::make('db', 'abc_ref_def')
                 ->add(1, 'a')
                 ->add(1, 'b');
 
@@ -962,7 +962,7 @@ create table abc
 
         try
         {
-            tiny_api_Ref_Table::make('abc_ref_def')
+            tiny_api_Ref_Table::make('db', 'abc_ref_def')
                 ->add(1, 'a', 1)
                 ->add(2, 'b', 1);
 
@@ -1026,7 +1026,7 @@ values
 <?
         $this->assertEquals(
             ob_get_clean(),
-            tiny_api_Ref_Table::make('abc_ref_def')
+            tiny_api_Ref_Table::make('db', 'abc_ref_def')
                 ->add(1, 'one', 1)
                 ->add(2, 'two', 2)
                 ->add(3, 'three', 3)
@@ -1037,7 +1037,7 @@ values
     {
         try
         {
-            tiny_api_Table::make('abc')->ai();
+            tiny_api_Table::make('db', 'abc')->ai();
 
             $this->fail('Was able to set a column as auto-increment even '
                         . 'though no column was defined.');
@@ -1055,7 +1055,7 @@ values
     {
         try
         {
-            tiny_api_Table::make('abc')->def('def');
+            tiny_api_Table::make('db', 'abc')->def('def');
 
             $this->fail('Was able to set a default value for a column even '
                         . 'though no column was defined.');
@@ -1073,7 +1073,7 @@ values
     {
         try
         {
-            tiny_api_Table::make('abc')->pk();
+            tiny_api_Table::make('db', 'abc')->pk();
 
             $this->fail('Was able to set a column as primary key even though '
                         . 'no column was defined.');
@@ -1091,7 +1091,7 @@ values
     {
         try
         {
-            tiny_api_Table::make('abc')->uk();
+            tiny_api_Table::make('db', 'abc')->uk();
 
             $this->fail('Was able to set a column as a unique key even though '
                         . 'no column was defined.');
@@ -1109,7 +1109,7 @@ values
     {
         try
         {
-            tiny_api_Table::make('abc')->fk('def');
+            tiny_api_Table::make('db', 'abc')->fk('def');
 
             $this->fail('Was able to set a column as a foreign key even though '
                         . 'no column was defined.');
@@ -1130,11 +1130,13 @@ values
 create table abc
 (
     id bigint unsigned not null auto_increment unique,
-    constraint foreign key abc_0_fk (id) references def on delete cascade
+    constraint foreign key abc_0_fk (id)
+            references def
+             on delete cascade
 );
 <?
         $expected = trim(ob_get_clean());
-        $table    = tiny_api_Table::make('abc')->id()->fk('def');
+        $table    = tiny_api_Table::make('db', 'abc')->id()->fk('def');
 
         $this->assertEquals($expected, $table->get_definition());
 
@@ -1152,12 +1154,13 @@ create table abc
 (
     col_a int,
     col_b int,
-    constraint foreign key abc_0_fk (col_a, col_b) references def (col_c, col_d)
+    constraint foreign key abc_0_fk (col_a, col_b)
+            references def (col_c, col_d)
 );
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
-            tiny_api_Table::make('abc')
+            tiny_api_Table::make('db', 'abc')
                 ->int('col_a')
                 ->int('col_b')
                 ->fk('def',
@@ -1171,7 +1174,7 @@ create table abc
     {
         try
         {
-            tiny_api_Table::make('abc')->fk('def', true, array('ghi'));
+            tiny_api_Table::make('db', 'abc')->fk('def', true, array('ghi'));
 
             $this->fail('Was able to create a foreign key even though the '
                         . 'column provided did not exist.');
@@ -1189,7 +1192,7 @@ create table abc
     {
         try
         {
-            tiny_api_Table::make('abc')->idx();
+            tiny_api_Table::make('db', 'abc')->idx();
 
             $this->fail('Was able to set a column as an index even though no '
                         . 'column was defined.');
@@ -1207,7 +1210,7 @@ create table abc
     {
         try
         {
-            tiny_api_Table::make('abc')->idx(array('def'));
+            tiny_api_Table::make('db', 'abc')->idx(array('def'));
 
             $this->fail('Was able to create an index even though the column '
                         . 'provided did not exist.');
@@ -1222,7 +1225,9 @@ create table abc
 
         try
         {
-            tiny_api_Table::make('abc')->int('col_a')->idx(array('col_a x'));
+            tiny_api_Table::make('db', 'abc')
+                ->int('col_a')
+                ->idx(array('col_a x'));
 
             $this->fail('Was able to create an index with an invalid column '
                         . 'modifier for asc/desc.');
@@ -1237,7 +1242,7 @@ create table abc
 
     function test_table_getting_index_definitions()
     {
-        $table   = tiny_api_Table::make('abc')
+        $table   = tiny_api_Table::make('db', 'abc')
                     ->int('col_a')
                     ->int('col_b')
                         ->idx()
@@ -1246,11 +1251,36 @@ create table abc
 
         $this->assertTrue(is_array($indexes));
         $this->assertEquals(2, count($indexes));
-        $this->assertEquals('create index abc_0_idx on abc (col_b)',
-                            $indexes[ 0 ]);
-        $this->assertEquals('create index abc_1_idx on abc (col_a asc, '
-                            . 'col_b desc)',
-                            $indexes[ 1 ]);
+        $this->assertEquals(
+            "create index abc_0_idx\n          on abc\n             (col_b)",
+            $indexes[ 0 ]);
+        $this->assertEquals(
+            "create index abc_1_idx\n          on abc\n"
+            . "             (col_a asc, col_b desc)",
+            $indexes[ 1 ]);
+    }
+
+    function test_text_type_with_no_length()
+    {
+        $this->assertEquals(
+            'abc text',
+            _tiny_api_Mysql_String_Column::make('abc')
+                ->text_type(_tiny_api_Mysql_String_Column::TYPE_TEXT)
+                ->get_definition());
+    }
+
+    function test_getting_db_name_from_ref_table()
+    {
+        $this->assertEquals(
+            'db',
+            tiny_api_Ref_Table::make('db', 'abc_ref_def')->get_db_name());
+    }
+
+    function test_getting_db_name_from_table()
+    {
+        $this->assertEquals(
+            'db',
+            tiny_api_Table::make('db', 'abc')->get_db_name());
     }
 }
 ?>
