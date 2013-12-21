@@ -120,6 +120,13 @@ extends tiny_api_Base_Rdbms
 
         $this->connect();
 
+        $is_select = true;
+        if (!preg_match('/^select /i', $query) &&
+            !preg_match('/^show /i', $query))
+        {
+            $is_select = false;
+        }
+
         $query = "/* $caller */ $query";
         if (($dss = $this->mysql->prepare($query)) === false)
         {
@@ -133,12 +140,19 @@ extends tiny_api_Base_Rdbms
             throw new tiny_Api_Data_Store_Exception($dss->error);
         }
 
-        $results = $this->fetch_all_assoc($dss);
-        $dss->free_result();
+        if ($is_select)
+        {
+            $results = $this->fetch_all_assoc($dss);
 
-        $this->memcache_store($results);
+            $dss->free_result();
+            $this->memcache_store($results);
 
-        return $results;
+            return $results;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     final public function retrieve($target,
@@ -333,7 +347,7 @@ extends tiny_api_Base_Rdbms
 
         if (($meta = $dss->result_metadata()) === false)
         {
-            throw new tiny_Api_Data_Store_Exception($dss->error);
+            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
         }
 
         while (($field = $meta->fetch_field()) !== false)

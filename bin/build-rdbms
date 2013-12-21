@@ -1,0 +1,38 @@
+#!/usr/bin/php
+<?php
+
+// +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/services/cli.php';
+require_once 'base/services/rdbms-builder/manager.php';
+require_once 'base/services/table-builder/mysql.php';
+
+// +------------------------------------------------------------+
+// | INSTRUCTIONS                                               |
+// +------------------------------------------------------------+
+
+tiny_api_cli_main(
+    tiny_Api_Cli_Conf::make()
+        ->add_description('Based on build.php files, construct all '
+                          . 'necessary RDBMS data structures.')
+        ->add_arg('connection-name',
+                  'The connection name configured in tiny-api-conf.php '
+                  . 'identifying which database to use.',
+                  true),
+    'main');
+
+// +------------------------------------------------------------+
+// | PUBLIC FUNCTIONS                                           |
+// +------------------------------------------------------------+
+
+function main(tiny_api_Cli $cli)
+{
+    $cli->header('RDBMS Builder');
+
+    tiny_api_Rdbms_Builder_Manager::make($cli)
+        ->set_connection_name($cli->get_arg('connection-name'))
+        ->execute();
+}
+?>

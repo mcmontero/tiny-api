@@ -104,4 +104,12 @@ class tiny_api_Table_Builder_Exception extends tiny_api_Exception {}
 //
 
 class tiny_api_Data_Armor_Exception extends tiny_api_Exception {}
+
+//
+// +----------------------------------+
+// | tiny_api_Rdbms_Builder_Exception |
+// +----------------------------------+
+//
+
+class tiny_api_Rdbms_Builder_Exception extends tiny_api_Exception {}
 ?>

@@ -1,0 +1,63 @@
+#!/usr/bin/php
+<?php
+
+// +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/services/cli.php';
+
+// +------------------------------------------------------------+
+// | INSTRUCTIONS                                               |
+// +------------------------------------------------------------+
+
+tiny_api_cli_main(
+    tiny_Api_Cli_Conf::make()
+        ->add_description('Convert the build file for a module into SQL.')
+        ->add_arg('module', 'The module to get SQL for.', true),
+    'main');
+
+// +------------------------------------------------------------+
+// | PUBLIC FUNCTIONS                                           |
+// +------------------------------------------------------------+
+
+function main(tiny_api_Cli $cli)
+{
+    global $__tiny_api_conf__;
+
+    $cli->header('Show SQL');
+
+    $module     = $cli->get_arg('module');
+    $build_file = stream_resolve_include_path("$module/sql/build.php");
+    if ($build_file === false)
+    {
+        $cli->warn("Module \"$module\" does not have a build file.");
+        $cli->cli_exit();
+    }
+
+    if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+    {
+        require_once 'base/services/table-builder/mysql.php';
+    }
+
+    require_once $build_file;
+    $func = $module . "_build";
+    $objs = $func();
+
+    foreach ($objs as $obj)
+    {
+        print $obj->get_definition() . "\n\n";
+
+        if ($obj instanceof tiny_api_Table)
+        {
+            $indexes = $obj->get_index_definitions();
+            foreach ($indexes as $index)
+            {
+                print "$index;\n\n";
+            }
+
+            print $obj->get_insert_statements();
+        }
+    }
+}
+?>
