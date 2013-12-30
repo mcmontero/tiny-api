@@ -439,26 +439,6 @@ class tiny_api_Table
             }
         }
 
-        if (!empty($this->foreign_keys))
-        {
-            foreach ($this->foreign_keys as $index => $foreign_key)
-            {
-                list($parent_table, $on_delete_cascade, $cols, $parent_cols) =
-                                    $foreign_key;
-
-                $terms[] = '    constraint foreign key '
-                           . $this->name
-                           . "_$index"
-                           . '_fk ('
-                           . implode(', ', $cols)
-                           . ")\n            references $parent_table"
-                           . (!empty($parent_cols) ?
-                                ' (' . implode(', ', $parent_cols) . ')' : '')
-                           . ($on_delete_cascade ?
-                                "\n             on delete cascade" : '');
-            }
-        }
-
         if (!empty($this->primary_key))
         {
             $terms[] = '    primary key '
@@ -476,6 +456,38 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 )<?= !is_null($this->engine) ? ' engine = ' . $this->engine . ';' : ';' ?>
 <?
         return ob_get_clean();
+    }
+
+    final public function get_foreign_key_definitions()
+    {
+        if (empty($this->foreign_keys))
+        {
+            return array();
+        }
+
+        $fks = array();
+        foreach ($this->foreign_keys as $index => $foreign_key)
+        {
+            list($parent_table, $on_delete_cascade, $cols, $parent_cols) =
+                                    $foreign_key;
+
+            $constraint_name = $this->name . "_$index" . '_fk';
+
+            $fks[] = '   alter table ' . $this->name . "\n"
+                     . 'add constraint '
+                     . $this->name
+                     . "_$index"
+                     . "_fk\n"
+                     . '   foreign key ('
+                     . implode(', ', $cols)
+                     . ")\n    references $parent_table"
+                     . (!empty($parent_cols) ?
+                        ' (' . implode(', ', $parent_cols) . ')' : '')
+                     . ($on_delete_cascade ?
+                        "\n     on delete cascade" : '');
+        }
+
+        return $fks;
     }
 
     final public function get_index_definitions()

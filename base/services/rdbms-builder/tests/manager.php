@@ -33,17 +33,6 @@ require_once 'base/services/rdbms-builder/manager.php';
 class rdbm_Builder_Test_Manager
 extends PHPUnit_Framework_TestCase
 {
-    function test_getting_module_dependencies()
-    {
-        $deps = _tiny_api_Rdbms_Builder_Module::make('a', 'b')
-                    ->set_dependencies(array('c', 'd'))
-                    ->get_dependencies();
-
-        $this->assertTrue(is_array($deps));
-        $this->assertTrue(in_array('c', $deps));
-        $this->assertTrue(in_array('d', $deps));
-    }
-
     function test_getting_module_sql()
     {
         $sql = _tiny_api_Rdbms_Builder_Module::make('a', 'b')
@@ -53,6 +42,40 @@ extends PHPUnit_Framework_TestCase
         $this->assertTrue(is_array($sql));
         $this->assertTrue(in_array('c', $sql));
         $this->assertTrue(in_array('d', $sql));
+    }
+
+    function test_getting_module_build_file()
+    {
+        $this->assertEquals(
+            '/a/b/c/build.php',
+            _tiny_api_Rdbms_Builder_Module::make('a', 'b')
+                ->set_build_file('/a/b/c/build.php')
+                ->get_build_file());
+    }
+
+    function test_getting_module_prefix()
+    {
+        $this->assertEquals(
+            'def',
+            _tiny_api_Rdbms_Builder_Module::make('abc', 'def')
+                ->get_prefix());
+    }
+
+    function test_builder_manager_execute_exceptions()
+    {
+        try
+        {
+            tiny_api_Rdbms_Builder_Manager::make()->execute();
+
+            $this->fail('Was able to execute tiny_api_Rdbms_Builder_Manager '
+                        . 'even though no connection name was set.');
+        }
+        catch (tiny_api_Rdbms_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'connection name has not been set',
+                $e->get_text());
+        }
     }
 }
 ?>

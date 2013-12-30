@@ -1129,16 +1129,27 @@ values
 ?>
 create table abc
 (
-    id bigint unsigned not null auto_increment unique,
-    constraint foreign key abc_0_fk (id)
-            references def
-             on delete cascade
+    id bigint unsigned not null auto_increment unique
 );
 <?
         $expected = trim(ob_get_clean());
         $table    = tiny_api_Table::make('db', 'abc')->id()->fk('def');
 
         $this->assertEquals($expected, $table->get_definition());
+
+        ob_start();
+?>
+   alter table abc
+add constraint abc_0_fk
+   foreign key (id)
+    references def
+     on delete cascade
+<?
+        $expected = trim(ob_get_clean(), "\t\n\r\0\x0B");
+        $fks      = $table->get_foreign_key_definitions();
+
+        $this->assertEquals(1, count($fks));
+        $this->assertEquals($expected, $fks[ 0 ]);
 
         $deps = $table->get_dependencies();
         $this->assertTrue(is_array($deps));
@@ -1150,24 +1161,23 @@ create table abc
     {
         ob_start();
 ?>
-create table abc
-(
-    col_a int,
-    col_b int,
-    constraint foreign key abc_0_fk (col_a, col_b)
-            references def (col_c, col_d)
-);
+   alter table abc
+add constraint abc_0_fk
+   foreign key (col_a, col_b)
+    references def (col_c, col_d)
 <?
-        $this->assertEquals(
-            trim(ob_get_clean()),
-            tiny_api_Table::make('db', 'abc')
-                ->int('col_a')
-                ->int('col_b')
-                ->fk('def',
-                     false,
-                     array('col_a', 'col_b'),
-                     array('col_c', 'col_d'))
-                ->get_definition());
+        $expected = trim(ob_get_clean(), "\t\n\r\0\x0B");
+        $fks      = tiny_api_Table::make('db', 'abc')
+                        ->int('col_a')
+                        ->int('col_b')
+                        ->fk('def',
+                             false,
+                             array('col_a', 'col_b'),
+                             array('col_c', 'col_d'))
+                        ->get_foreign_key_definitions();
+
+        $this->assertEquals(1, count($fks));
+        $this->assertEquals($expected, $fks[ 0 ]);
     }
 
     function test_table_foreign_key_exceptions()

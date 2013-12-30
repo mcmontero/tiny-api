@@ -20,7 +20,10 @@ tiny_api_cli_main(
         ->add_arg('connection-name',
                   'The connection name configured in tiny-api-conf.php '
                   . 'identifying which database to use.',
-                  true),
+                  true)
+        ->add_arg('module-name',
+                  'A specific module to build.',
+                  false),
     'main');
 
 // +------------------------------------------------------------+

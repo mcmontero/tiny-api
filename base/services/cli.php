@@ -176,27 +176,26 @@ class tiny_api_Cli_Conf
         {
             list($description, $required) = $data;
 
-            if ($required)
+            if (preg_match('/^--/', $name))
             {
-                if (preg_match('/^--/', $name))
+                if ($required &&
+                    (!array_key_exists($name, $this->options) ||
+                     empty($this->options[ $name ])))
                 {
-                    if (!array_key_exists($name, $this->options) ||
-                        empty($this->options[ $name ]))
-                    {
-                        $this->usage();
-                    }
+                    $this->usage();
                 }
-                else
+            }
+            else
+            {
+                $arg_index = $this->arg_indexes[ $name ];
+                if ($required &&
+                    (!array_key_exists($arg_index, $this->args) ||
+                     empty($this->args[ $arg_index ])))
                 {
-                    $arg_index = $this->arg_indexes[ $name ];
-                    if (!array_key_exists($arg_index, $this->args) ||
-                        empty($this->args[ $arg_index ]))
-                    {
-                        $this->usage();
-                    }
-                    $this->args[ $name ] = $this->args[ $arg_index ];
-                    unset($this->args[ $arg_index ]);
+                    $this->usage();
                 }
+                $this->args[ $name ] = $this->args[ $arg_index ];
+                unset($this->args[ $arg_index ]);
             }
         }
     }

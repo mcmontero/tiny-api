@@ -34,19 +34,25 @@ class tiny_api_Rdbms_Builder_Manager
 {
     private $cli;
     private $modules;
-    private $modules_to_build;
-    private $modules_to_build_prefix;
     private $num_rdbms_objects;
     private $connection_name;
     private $exec_sql_command;
+    private $dependencies_map;
+    private $dependents_map;
+    private $modules_to_build;
+    private $modules_to_build_prefix;
+    private $foreign_keys;
 
     function __construct(tiny_api_Cli $cli = null)
     {
         $this->cli                     = $cli;
         $this->modules                 = array();
+        $this->num_rdbms_objects       = 0;
+        $this->dependencies_map        = array();
+        $this->dependents_map          = array();
         $this->modules_to_build        = array();
         $this->modules_to_build_prefix = array();
-        $this->num_rdbms_objects       = 0;
+        $this->foreign_keys            = array();
     }
 
     static function make(tiny_api_Cli $cli = null)
@@ -60,8 +66,22 @@ class tiny_api_Rdbms_Builder_Manager
 
     final public function execute()
     {
+        if (empty($this->connection_name))
+        {
+            throw new tiny_api_Rdbms_Builder_Exception(
+                        'connection name has not been set');
+        }
+
         // +------------------------------------------------------------+
         // | Step 1                                                     |
+        // |                                                            |
+        // | Clean up unused RDBMS builder files.                       |
+        // +------------------------------------------------------------+
+
+        $this->clean_up_rdbms_builder_files();
+
+        // +------------------------------------------------------------+
+        // | Step 2                                                     |
         // |                                                            |
         // | Create RDBMS builder objects.                              |
         // +------------------------------------------------------------+
@@ -69,138 +89,33 @@ class tiny_api_Rdbms_Builder_Manager
         $this->verify_rdbms_builder_objects();
 
         // +------------------------------------------------------------+
-        // | Step 1                                                     |
-        // |                                                            |
-        // | Compile the list of build files in the API.                |
-        // +------------------------------------------------------------+
-
-        $this->notice('Compiling list of build files...');
-
-        $build_files = array();
-        $paths       = explode(':', ini_get('include_path'));
-        foreach ($paths as $path)
-        {
-            foreach (new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator($path))
-                     as $file)
-            {
-                if (preg_match('#sql/build.php$#', $file->getPathName()))
-                {
-                    $build_files[] = $file->getPathName();
-                }
-            }
-        }
-        $num_build_files = count($build_files);
-
-        $this->notice('number of build files found: '
-                      . number_format($num_build_files),
-                      1);
-
-        // +------------------------------------------------------------+
-        // | Step 2                                                     |
-        // |                                                            |
-        // | Configure each of the modules that needs to be built.      |
-        // +------------------------------------------------------------+
-
-        $this->notice('Compiling modules to build...');
-
-        foreach ($build_files as $build_file)
-        {
-            $contents = file_get_contents($build_file);
-            $sha1     = sha1($contents);
-
-            $module_info = dsh()->query
-            (
-                __METHOD__,
-                'select sha1
-                   from rdbms_builder.module_info
-                  where build_file = ?',
-                array($build_file)
-            );
-
-            if (empty($module_info) || $module_info[ 0 ][ 'sha1' ] != $sha1)
-            {
-                $path        = explode('/', $build_file);
-                $module_name = $path[ (count($path) - 3) ];
-                if (empty($module_name))
-                {
-                    throw new tiny_api_Rdbms_Builder_Exception(
-                                'could not determine module name from build '
-                                . "file path \"$build_file\"");
-                }
-
-                if (!empty($contents))
-                {
-                    if (!preg_match('/function ((.*)_build)\\s?\(/msi',
-                                    $contents, $matches))
-                    {
-                        continue;
-                    }
-
-                    $build_func = $matches[ 1 ];
-                    $prefix     = $matches[ 2 ];
-
-                    $this->modules[ $module_name ] =
-                        _tiny_api_Rdbms_Builder_Module::make(
-                                $module_name, $prefix)
-                            ->set_build_file($build_file);
-
-                    require_once $build_file;
-
-                    $objs = $build_func();
-                    $sql  = array();
-                    foreach ($objs as $obj)
-                    {
-                        $sql[] = array(
-                            $obj->get_db_name(),
-                            $obj->get_definition(),
-                        );
-
-                        if ($obj instanceof tiny_api_Table)
-                        {
-                            $dependencies = $obj->get_dependencies();
-                            foreach ($dependencies as $dependency)
-                            {
-                                $this->modules_to_build[ $dependency ] = true;
-                            }
-                            $this->modules[ $module_name ]
-                                ->set_dependencies($dependencies);
-
-                            $indexes = $obj->get_index_definitions();
-                            foreach ($indexes as $index)
-                            {
-                                $sql[] = array(
-                                    $obj->get_db_name(),
-                                    "$index;",
-                                );
-                            }
-
-                            $sql[] = array(
-                                $obj->get_db_name(),
-                                $obj->get_insert_statements(),
-                            );
-                        }
-                    }
-                    $this->modules[ $module_name ]->set_sql($sql);
-
-                    $this->modules_to_build[ $module_name ]   = true;
-                    $this->modules_to_build_prefix[ $prefix ] = true;
-                }
-            }
-        }
-
-        $this->notice('number of modules to build: '
-                      . number_format(count($this->modules_to_build)),
-                      1);
-
-        if (empty($this->modules_to_build))
-        {
-            $this->notice('The database is up to date.');
-            exit(0);
-        }
-
-        // +------------------------------------------------------------+
         // | Step 3                                                     |
+        // |                                                            |
+        // | Assemble all modules.                                      |
+        // +------------------------------------------------------------+
+
+        $this->assemble_all_modules();
+
+        // +------------------------------------------------------------+
+        // | Step 4                                                     |
+        // |                                                            |
+        // | Compile the list of modules that need to be built.         |
+        // +------------------------------------------------------------+
+
+        $module_name = $this->cli->get_arg('module-name');
+        if (!empty($module_name))
+        {
+            $this->notice('Compiling build list for specified module...');
+            $this->compile_build_list_for_module($module_name);
+        }
+        else
+        {
+            $this->notice('Compiling build list based on changes...');
+            $this->compile_build_list_by_changes();
+        }
+
+        // +------------------------------------------------------------+
+        // | Step 5                                                     |
         // |                                                            |
         // | Drop all foreign key constraints for the tables that need  |
         // | to built so we can tear down objects without errors.       |
@@ -209,91 +124,36 @@ class tiny_api_Rdbms_Builder_Manager
         $this->drop_foreign_key_constraints();
 
         // +------------------------------------------------------------+
-        // | Step 5                                                     |
-        // |                                                            |
-        // | Build all modules.                                         |
-        // +------------------------------------------------------------+
-
-        $this->notice('Dropping objects that will be rebuilt...');
-
-        $tables = dsh()->query
-        (
-            __METHOD__,
-            'select table_schema,
-                    table_name
-               from tables
-              where table_schema != ?',
-            array('information_schema')
-        );
-
-        foreach ($tables as $table)
-        {
-            $name = explode('_', $table[ 'table_name' ]);
-            if (array_key_exists($name[ 0 ], $this->modules_to_build_prefix))
-            {
-                $this->notice('(-) table ' . $table[ 'table_name' ], 1);
-
-                dsh()->query
-                (
-                    __METHOD__,
-                    'drop table '
-                    . $table[ 'table_schema' ]
-                    . '.'
-                    . $table[ 'table_name' ]
-                );
-            }
-        }
-
-        // +------------------------------------------------------------+
         // | Step 6                                                     |
         // |                                                            |
-        // | Build all modules.                                         |
+        // | Drop objects for modules marked for rebuild.               |
         // +------------------------------------------------------------+
 
-        $this->notice('Building all objects now...');
+        $this->drop_objects();
 
-        $pass = 0;
-        while (1)
-        {
-            foreach ($this->modules_to_build as $module_name => $true)
-            {
-                $build = true;
-                $deps  = $this->modules[ $module_name ]->get_dependencies();
-                foreach ($deps as $dep)
-                {
-                    if (array_key_exists($dep, $this->modules_to_build))
-                    {
-                        $build = false;
-                        break;
-                    }
-                }
+        // +------------------------------------------------------------+
+        // | Step 7                                                     |
+        // |                                                            |
+        // | Rebuild modules.                                           |
+        // +------------------------------------------------------------+
 
-                if ($build)
-                {
-                    $this->notice("(pass.$pass) building module $module_name",
-                                  1);
+        $this->rebuild_modules();
 
-                    if ($this->build_sql($this->modules[ $module_name ]))
-                    {
-                        unset($this->modules_to_build[ $module_name ]);
-                    }
-                }
-            }
+        // +------------------------------------------------------------+
+        // | Step 8                                                     |
+        // |                                                            |
+        // | Add all foreign key constraints.                           |
+        // +------------------------------------------------------------+
 
-            if (count($this->modules_to_build) == 0)
-            {
-                break;
-            }
+        $this->add_foreign_key_constraints();
 
-            $pass++;
-            if ($pass >= 10)
-            {
-                throw new tiny_api_Rdbms_Builder_Exception(
-                            'a circular dependency exists between the '
-                            . "following modules:\n"
-                            . trim(print_r($this->modules_to_build, true)));
-            }
-        }
+        // +------------------------------------------------------------+
+        // | Step 9                                                     |
+        // |                                                            |
+        // | Verify foreign key indexes.                                |
+        // +------------------------------------------------------------+
+
+        $this->verify_foreign_key_indexes();
 
         $this->notice('Number of objects built: '
                       . number_format($this->num_rdbms_objects));
@@ -308,6 +168,160 @@ class tiny_api_Rdbms_Builder_Manager
     // +-----------------+
     // | Private Methods |
     // +-----------------+
+
+    private function add_foreign_key_constraints()
+    {
+        $this->notice('Adding foreign key constraints...');
+
+        foreach ($this->foreign_keys as $fk)
+        {
+            list($db_name, $foreign_key) = $fk;
+
+            if (!preg_match('/add constraint (.*?) /msi',
+                            $foreign_key, $matches))
+            {
+                throw new tiny_api_Rdbms_Builder_Exception(
+                            "could not find name of constraint in statement:\n"
+                            . $foreign_key);
+            }
+
+            $this->execute_statement($db_name, $foreign_key);
+            $this->notice("(+) " . trim($matches[ 1 ]), 1);
+
+            $this->num_rdbms_objects++;
+        }
+    }
+
+    private function assemble_all_modules()
+    {
+        $this->notice('Assembling all modules...');
+
+        $paths = explode(':', ini_get('include_path'));
+        foreach ($paths as $path)
+        {
+            $command = "/usr/bin/find $path/ -type f -name \"build.php\"";
+            $output  = null;
+            exec($command, $output, $retval);
+
+            if ($retval)
+            {
+                throw new tiny_api_Rdbms_Builder_Exception(
+                            "failed to execute \"$command\": "
+                            . print_r($output, true));
+            }
+
+            foreach ($output as $file)
+            {
+                $module_name = null;
+                $build_func  = null;
+                $prefix      = null;
+
+                if (preg_match('#(.*?)/sql/build.php$#', $file, $matches))
+                {
+                    $module_name = preg_replace("#$path/?#", '', $matches[ 1 ]);
+
+                    $contents = file_get_contents($file);
+                    if ($contents &&
+                        preg_match('/function ((.*)_build)\\s?\(/msi',
+                                   $contents, $matches))
+                    {
+                        $build_func = $matches[ 1 ];
+                        $prefix     = $matches[ 2 ];
+                    }
+                }
+
+                if (!empty($module_name) && !empty($prefix))
+                {
+                    $this->modules[ $module_name ] =
+                        _tiny_api_Rdbms_Builder_Module::make(
+                                $module_name, $prefix)
+                            ->set_build_file($file);
+
+                    if (!array_key_exists(
+                            $module_name,
+                            $this->dependencies_map))
+                    {
+                        $this->dependencies_map[ $module_name ] = array();
+                    }
+
+                    if (!array_key_exists(
+                            $module_name,
+                            $this->dependents_map))
+                    {
+                        $this->dependents_map[ $module_name ] = array();
+                    }
+
+                    require_once $file;
+
+                    $objs = $build_func();
+                    $sql  = array();
+                    foreach ($objs as $obj)
+                    {
+                        $sql[] = array
+                        (
+                            $obj->get_db_name(),
+                            $obj->get_definition(),
+                        );
+
+                        if ($obj instanceof tiny_api_Table)
+                        {
+                            $dependencies = $obj->get_dependencies();
+                            foreach ($dependencies as $dependency)
+                            {
+                                if ($module_name != $dependency)
+                                {
+                                    $this->dependencies_map[ $module_name ][] =
+                                                $dependency;
+
+                                    if (!array_key_exists(
+                                            $dependency,
+                                            $this->dependents_map))
+                                    {
+                                        $this->dependents_map[ $dependency ] =
+                                                        array();
+                                    }
+
+                                    $this->dependents_map[ $dependency ][] =
+                                                $module_name;
+                                }
+                            }
+
+                            $indexes = $obj->get_index_definitions();
+                            foreach ($indexes as $index)
+                            {
+                                $sql[] = array
+                                (
+                                    $obj->get_db_name(),
+                                    "$index;",
+                                );
+                            }
+
+                            $inserts = $obj->get_insert_statements();
+                            if (!empty($inserts))
+                            {
+                                $sql[] = array
+                                (
+                                    $obj->get_db_name(),
+                                    $inserts,
+                                );
+                            }
+
+                            $fks = $obj->get_foreign_key_definitions();
+                            foreach ($fks as $fk)
+                            {
+                                $this->foreign_keys[] = array
+                                (
+                                    $obj->get_db_name(),
+                                    "$fk;",
+                                );
+                            }
+                        }
+                    }
+                    $this->modules[ $module_name ]->set_sql($sql);
+                }
+            }
+        }
+    }
 
     private function build_sql(_tiny_api_Rdbms_Builder_Module $module)
     {
@@ -334,24 +348,7 @@ class tiny_api_Rdbms_Builder_Manager
                 $this->notice('(i) row', 2);
             }
 
-            $temp_file = tempnam('/tmp', 'tiny-api-rdbms-builder-');
-            file_put_contents($temp_file, $statement);
-
-            $command = $this->get_exec_sql_command()
-                       . " --database=$db_name"
-                       . " < $temp_file "
-                       . " 2>&1";
-            $output  = null;
-            exec($command, $output, $retval);
-
-            if ($retval)
-            {
-                throw new tiny_api_Rdbms_Builder_Exception(
-                            "$temp_file\n" .
-                            print_r($this->enhance_build_error($output), true));
-            }
-
-            unlink($temp_file);
+            $this->execute_statement($db_name, $statement);
         }
 
         $sha1 = sha1(file_get_contents($module->get_build_file()));
@@ -385,6 +382,44 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         return true;
+    }
+
+    private function clean_up_rdbms_builder_files()
+    {
+        $this->notice('Cleaning up RDBMS builder files...');
+
+        $dir = new DirectoryIterator('/tmp');
+        foreach ($dir as $file)
+        {
+            if (!$dir->isDot())
+            {
+                if (preg_match('/^tiny-api-rdbms-builder-/', $file))
+                {
+                    unlink("/tmp/$file");
+                    $this->notice("(-) $file", 1);
+                }
+            }
+        }
+    }
+
+    private function compile_build_list_by_changes()
+    {
+    }
+
+    private function compile_build_list_for_module($module_name)
+    {
+        $this->modules_to_build
+            [ $module_name ] = true;
+        $this->modules_to_build_prefix
+            [ $this->modules[ $module_name ]->get_prefix() ] = true;
+
+        if (array_key_exists($module_name, $this->dependents_map))
+        {
+            foreach ($this->dependents_map[ $module_name ] as $index => $module)
+            {
+                $this->compile_build_list_for_module($module);
+            }
+        }
     }
 
     private function drop_foreign_key_constraints()
@@ -436,6 +471,39 @@ class tiny_api_Rdbms_Builder_Manager
         }
     }
 
+    private function drop_objects()
+    {
+        $this->notice('Dropping objects that will be rebuilt...');
+
+        $tables = dsh()->query
+        (
+            __METHOD__,
+            'select table_schema,
+                    table_name
+               from tables
+              where table_schema != ?',
+            array('information_schema')
+        );
+
+        foreach ($tables as $table)
+        {
+            $name = explode('_', $table[ 'table_name' ]);
+            if (array_key_exists($name[ 0 ], $this->modules_to_build_prefix))
+            {
+                $this->notice('(-) table ' . $table[ 'table_name' ], 1);
+
+                dsh()->query
+                (
+                    __METHOD__,
+                    'drop table '
+                    . $table[ 'table_schema' ]
+                    . '.'
+                    . $table[ 'table_name' ]
+                );
+            }
+        }
+    }
+
     private function enhance_build_error(array $output)
     {
         global $__tiny_api_conf__;
@@ -462,6 +530,28 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         $this->cli->error($message, $indent);
+    }
+
+    private function execute_statement($db_name, $statement)
+    {
+        $temp_file = tempnam('/tmp', 'tiny-api-rdbms-builder-');
+        file_put_contents($temp_file, $statement);
+
+        $command = $this->get_exec_sql_command()
+                   . " --database=$db_name"
+                   . " < $temp_file "
+                   . " 2>&1";
+        $output  = null;
+        exec($command, $output, $retval);
+
+        if ($retval)
+        {
+            throw new tiny_api_Rdbms_Builder_Exception(
+                        "$temp_file\n" .
+                        print_r($this->enhance_build_error($output), true));
+        }
+
+        unlink($temp_file);
     }
 
     private function get_exec_sql_command()
@@ -534,6 +624,23 @@ class tiny_api_Rdbms_Builder_Manager
         $this->cli->notice($message, $indent);
     }
 
+    private function rebuild_modules()
+    {
+        $this->notice('Building all objects now...');
+
+        foreach ($this->modules_to_build as $module_name => $true)
+        {
+            $this->notice("building module $module_name", 1);
+
+            $this->build_sql($this->modules[ $module_name ]);
+        }
+    }
+
+    private function verify_foreign_key_indexes()
+    {
+        $this->notice('Verifying foreign key indexes...');
+    }
+
     private function verify_rdbms_builder_objects()
     {
         global $__tiny_api_conf__;
@@ -558,6 +665,10 @@ class tiny_api_Rdbms_Builder_Manager
                 }
             }
 
+            list($host, $user, $password) =
+                $__tiny_api_conf__[ 'mysql connection data' ]
+                                  [ $this->connection_name ];
+
             ob_start();
 ?>
 create database rdbms_builder;
@@ -570,8 +681,8 @@ create table rdbms_builder.module_info
 
 grant all privileges
    on rdbms_builder.*
-   to ''@'localhost'
-      identified by '';
+   to '<?= $user ?>'@'<?= $host ?>'
+      identified by '<?= $password ?>';
 
 flush privileges;
 <?
@@ -615,9 +726,8 @@ class _tiny_api_Rdbms_Builder_Module
 {
     private $name;
     private $prefix;
-    private $build_file;
     private $sql;
-    private $dependencies;
+    private $build_file;
 
     function __construct($name, $prefix)
     {
@@ -639,9 +749,9 @@ class _tiny_api_Rdbms_Builder_Module
         return $this->build_file;
     }
 
-    final public function get_dependencies()
+    final public function get_prefix()
     {
-        return $this->dependencies;
+        return $this->prefix;
     }
 
     final public function get_sql()
@@ -652,12 +762,6 @@ class _tiny_api_Rdbms_Builder_Module
     final public function set_build_file($build_file)
     {
         $this->build_file = $build_file;
-        return $this;
-    }
-
-    final public function set_dependencies(array $dependencies)
-    {
-        $this->dependencies = $dependencies;
         return $this;
     }
 

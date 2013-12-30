@@ -57,6 +57,12 @@ function main(tiny_api_Cli $cli)
             }
 
             print $obj->get_insert_statements();
+
+            $foreign_keys = $obj->get_foreign_key_definitions();
+            foreach ($foreign_keys as $foreign_key)
+            {
+                print "$foreign_key;\n\n";
+            }
         }
     }
 }
