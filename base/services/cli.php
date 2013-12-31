@@ -194,8 +194,12 @@ class tiny_api_Cli_Conf
                 {
                     $this->usage();
                 }
-                $this->args[ $name ] = $this->args[ $arg_index ];
-                unset($this->args[ $arg_index ]);
+
+                if (array_key_exists($arg_index, $this->args))
+                {
+                    $this->args[ $name ] = $this->args[ $arg_index ];
+                    unset($this->args[ $arg_index ]);
+                }
             }
         }
     }

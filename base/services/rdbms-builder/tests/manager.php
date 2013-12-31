@@ -77,5 +77,13 @@ extends PHPUnit_Framework_TestCase
                 $e->get_text());
         }
     }
+
+    function test_getting_module_name()
+    {
+        $this->assertEquals(
+            'abc',
+            _tiny_api_Rdbms_Builder_Module::make('abc', 'def')
+                ->get_name());
+    }
 }
 ?>

@@ -21,6 +21,12 @@
  */
 
 // +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/conf.php';
+
+// +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
 
@@ -106,12 +112,19 @@ class tiny_api_Rdbms_Builder_Manager
         if (!empty($module_name))
         {
             $this->notice('Compiling build list for specified module...');
+            $this->notice("(+) $module_name", 1);
             $this->compile_build_list_for_module($module_name);
         }
         else
         {
             $this->notice('Compiling build list based on changes...');
             $this->compile_build_list_by_changes();
+        }
+
+        if (empty($this->modules_to_build))
+        {
+            $this->notice('Database is up to date!');
+            exit(0);
         }
 
         // +------------------------------------------------------------+
@@ -154,6 +167,12 @@ class tiny_api_Rdbms_Builder_Manager
         // +------------------------------------------------------------+
 
         $this->verify_foreign_key_indexes();
+
+        // +------------------------------------------------------------+
+        // | Step 10                                                    |
+        // |                                                            |
+        // | Report interesting stats about the build.                  |
+        // +------------------------------------------------------------+
 
         $this->notice('Number of objects built: '
                       . number_format($this->num_rdbms_objects));
@@ -325,8 +344,6 @@ class tiny_api_Rdbms_Builder_Manager
 
     private function build_sql(_tiny_api_Rdbms_Builder_Module $module)
     {
-        global $__tiny_api_conf__;
-
         foreach ($module->get_sql() as $data)
         {
             list($db_name, $statement) = $data;
@@ -353,7 +370,7 @@ class tiny_api_Rdbms_Builder_Manager
 
         $sha1 = sha1(file_get_contents($module->get_build_file()));
 
-        if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+        if (tiny_api_is_data_store_mysql_myisam())
         {
             dsh()->query
             (
@@ -375,10 +392,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
         else
         {
-            throw new tiny_api_Rdbms_Builder_Exception(
-                        'the RDBMS builder does not currently support "'
-                        . $__tiny_api_conf__[ 'data store' ]
-                        . '"');
+            $this->data_store_not_supported();
         }
 
         return true;
@@ -404,6 +418,34 @@ class tiny_api_Rdbms_Builder_Manager
 
     private function compile_build_list_by_changes()
     {
+        foreach ($this->modules as $module)
+        {
+            $sha1 = sha1(file_get_contents($module->get_build_file()));
+
+            if (tiny_api_is_data_store_mysql_myisam())
+            {
+                $results = dsh()->query
+                (
+                    __METHOD__,
+                    'select sha1
+                       from rdbms_builder.module_info
+                      where build_file = ?',
+                    array($module->get_build_file())
+                );
+            }
+            else
+            {
+                $this->data_store_not_supported();
+            }
+
+            if (!array_key_exists(0, $results) ||
+                !array_key_exists('sha1', $results[ 0 ]) ||
+                $results[ 0 ][ 'sha1' ] != $sha1)
+            {
+                $this->notice('(+) ' . $module->get_name(), 1);
+                $this->compile_build_list_for_module($module->get_name());
+            }
+        }
     }
 
     private function compile_build_list_for_module($module_name)
@@ -422,13 +464,21 @@ class tiny_api_Rdbms_Builder_Manager
         }
     }
 
-    private function drop_foreign_key_constraints()
+    private function data_store_not_supported()
     {
         global $__tiny_api_conf__;
 
+        throw new tiny_api_Rdbms_Builder_Exception(
+                    'the RDBMS builder does not currently support "'
+                    . $__tiny_api_conf__[ 'data store' ]
+                    . '"');
+    }
+
+    private function drop_foreign_key_constraints()
+    {
         $this->notice('Dropping relevant foreign key constraints...');
 
-        if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+        if (tiny_api_is_data_store_mysql_myisam())
         {
             $constraints = dsh()->query
             (
@@ -464,10 +514,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
         else
         {
-            throw new tiny_api_Rdbms_Builder_Exception(
-                        'the RDBMS builder does not currently support "'
-                        . $__tiny_api_conf__[ 'data store' ]
-                        . '"');
+            $this->data_store_not_supported();
         }
     }
 
@@ -506,9 +553,7 @@ class tiny_api_Rdbms_Builder_Manager
 
     private function enhance_build_error(array $output)
     {
-        global $__tiny_api_conf__;
-
-        if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+        if (tiny_api_is_data_store_mysql_myisam())
         {
             if (preg_match('/^ERROR 1005/', $output[ 0 ]) &&
                 preg_match('/errno: 150/', $output[ 0 ]))
@@ -563,7 +608,7 @@ class tiny_api_Rdbms_Builder_Manager
             return $this->exec_sql_command;
         }
 
-        if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+        if (tiny_api_is_data_store_mysql_myisam())
         {
             if (empty($this->connection_name))
             {
@@ -607,10 +652,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
         else
         {
-            throw new tiny_api_Rdbms_Builder_Exception(
-                        'the RDBMS builder does not currently support "'
-                        . $__tiny_api_conf__[ 'data store' ]
-                        . '"');
+            $this->data_store_not_supported();
         }
     }
 
@@ -645,7 +687,7 @@ class tiny_api_Rdbms_Builder_Manager
     {
         global $__tiny_api_conf__;
 
-        if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+        if (tiny_api_is_data_store_mysql_myisam())
         {
             $dsh = tiny_api_Data_Store_Provider::get_instance()
                     ->get_data_store_handle()
@@ -694,10 +736,7 @@ flush privileges;
         }
         else
         {
-            throw new tiny_api_Rdbms_Builder_Exception(
-                        'the RDBMS builder does not currently support "'
-                        . $__tiny_api_conf__[ 'data store' ]
-                        . '"');
+            $this->data_store_not_supported();
         }
     }
 
@@ -747,6 +786,11 @@ class _tiny_api_Rdbms_Builder_Module
     final public function get_build_file()
     {
         return $this->build_file;
+    }
+
+    final public function get_name()
+    {
+        return $this->name;
     }
 
     final public function get_prefix()
