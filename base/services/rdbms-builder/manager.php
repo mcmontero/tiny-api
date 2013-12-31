@@ -48,6 +48,7 @@ class tiny_api_Rdbms_Builder_Manager
     private $modules_to_build;
     private $modules_to_build_prefix;
     private $foreign_keys;
+    private $unindexed_foreign_keys;
 
     function __construct(tiny_api_Cli $cli = null)
     {
@@ -59,6 +60,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->modules_to_build        = array();
         $this->modules_to_build_prefix = array();
         $this->foreign_keys            = array();
+        $this->unindexed_foreign_keys  = array();
     }
 
     static function make(tiny_api_Cli $cli = null)
@@ -121,6 +123,12 @@ class tiny_api_Rdbms_Builder_Manager
             $this->compile_build_list_by_changes();
         }
 
+        // +------------------------------------------------------------+
+        // | Step 5                                                     |
+        // |                                                            |
+        // | Determine if the build should continue.                    |
+        // +------------------------------------------------------------+
+
         if (empty($this->modules_to_build))
         {
             $this->notice('Database is up to date!');
@@ -128,7 +136,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         // +------------------------------------------------------------+
-        // | Step 5                                                     |
+        // | Step 6                                                     |
         // |                                                            |
         // | Drop all foreign key constraints for the tables that need  |
         // | to built so we can tear down objects without errors.       |
@@ -137,7 +145,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->drop_foreign_key_constraints();
 
         // +------------------------------------------------------------+
-        // | Step 6                                                     |
+        // | Step 7                                                     |
         // |                                                            |
         // | Drop objects for modules marked for rebuild.               |
         // +------------------------------------------------------------+
@@ -145,7 +153,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->drop_objects();
 
         // +------------------------------------------------------------+
-        // | Step 7                                                     |
+        // | Step 8                                                     |
         // |                                                            |
         // | Rebuild modules.                                           |
         // +------------------------------------------------------------+
@@ -153,7 +161,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->rebuild_modules();
 
         // +------------------------------------------------------------+
-        // | Step 8                                                     |
+        // | Step 9                                                     |
         // |                                                            |
         // | Add all foreign key constraints.                           |
         // +------------------------------------------------------------+
@@ -161,7 +169,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->add_foreign_key_constraints();
 
         // +------------------------------------------------------------+
-        // | Step 9                                                     |
+        // | Step 10                                                    |
         // |                                                            |
         // | Verify foreign key indexes.                                |
         // +------------------------------------------------------------+
@@ -169,7 +177,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->verify_foreign_key_indexes();
 
         // +------------------------------------------------------------+
-        // | Step 10                                                    |
+        // | Step 11                                                    |
         // |                                                            |
         // | Report interesting stats about the build.                  |
         // +------------------------------------------------------------+
@@ -334,6 +342,10 @@ class tiny_api_Rdbms_Builder_Manager
                                     "$fk;",
                                 );
                             }
+
+                            $this->unindexed_foreign_keys =
+                                array_merge($this->unindexed_foreign_keys,
+                                            $obj->get_unindexed_foreign_keys());
                         }
                     }
                     $this->modules[ $module_name ]->set_sql($sql);
@@ -522,32 +534,40 @@ class tiny_api_Rdbms_Builder_Manager
     {
         $this->notice('Dropping objects that will be rebuilt...');
 
-        $tables = dsh()->query
-        (
-            __METHOD__,
-            'select table_schema,
-                    table_name
-               from tables
-              where table_schema != ?',
-            array('information_schema')
-        );
-
-        foreach ($tables as $table)
+        if (tiny_api_is_data_store_mysql_myisam())
         {
-            $name = explode('_', $table[ 'table_name' ]);
-            if (array_key_exists($name[ 0 ], $this->modules_to_build_prefix))
-            {
-                $this->notice('(-) table ' . $table[ 'table_name' ], 1);
+            $tables = dsh()->query
+            (
+                __METHOD__,
+                'select table_schema,
+                        table_name
+                   from tables
+                  where table_schema != ?',
+                array('information_schema')
+            );
 
-                dsh()->query
-                (
-                    __METHOD__,
-                    'drop table '
-                    . $table[ 'table_schema' ]
-                    . '.'
-                    . $table[ 'table_name' ]
-                );
+            foreach ($tables as $table)
+            {
+                $name = explode('_', $table[ 'table_name' ]);
+                if (array_key_exists($name[ 0 ],
+                    $this->modules_to_build_prefix))
+                {
+                    $this->notice('(-) table ' . $table[ 'table_name' ], 1);
+
+                    dsh()->query
+                    (
+                        __METHOD__,
+                        'drop table '
+                        . $table[ 'table_schema' ]
+                        . '.'
+                        . $table[ 'table_name' ]
+                    );
+                }
             }
+        }
+        else
+        {
+            $this->data_store_not_supported();
         }
     }
 
@@ -681,6 +701,27 @@ class tiny_api_Rdbms_Builder_Manager
     private function verify_foreign_key_indexes()
     {
         $this->notice('Verifying foreign key indexes...');
+
+        foreach ($this->unindexed_foreign_keys as $data)
+        {
+            list($table_name, $parent_table_name, $cols, $parent_cols) = $data;
+
+            $this->notice('(!) unindexed foreign key', 1);
+            $this->notice("table: $table_name -> parent: $parent_table_name",
+                          2);
+            $this->notice('['
+                          . implode(', ', $cols)
+                          . '] -> ['
+                          . implode(', ', $parent_cols)
+                          . ']',
+                          2);
+        }
+
+        if (!empty($this->unindexed_foreign_keys))
+        {
+            throw new tiny_api_Rdbms_Builder_Exception(
+                        'unindexed foreign keys found (see above)');
+        }
     }
 
     private function verify_rdbms_builder_objects()

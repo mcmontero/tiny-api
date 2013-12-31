@@ -145,6 +145,7 @@ class tiny_api_Table
     private $dependencies;
     private $indexes;
     private $rows;
+    private $indexed_cols;
 
     function __construct($db_name, $name)
     {
@@ -159,6 +160,7 @@ class tiny_api_Table
         $this->dependencies = array();
         $this->indexes      = array();
         $this->rows         = array();
+        $this->indexed_cols = array();
     }
 
     static function make($db_name, $name)
@@ -544,6 +546,29 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this->dependencies;
     }
 
+    final public function get_unindexed_foreign_keys()
+    {
+        $unindexed = array();
+        foreach ($this->foreign_keys as $data)
+        {
+            list($parent_table, $on_delete_cascade, $cols, $parent_cols) =
+                                    $data;
+
+            if (!array_key_exists(implode(',', $cols), $this->indexed_cols))
+            {
+                $unindexed[] = array
+                (
+                    $this->name,
+                    $parent_table,
+                    $cols,
+                    $parent_cols
+                );
+            }
+        }
+
+        return $unindexed;
+    }
+
     final public function id()
     {
         $this->serial('id');
@@ -578,6 +603,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         }
 
         $this->indexes[] = $cols;
+        $this->add_indexed_cols($cols);
 
         return $this;
     }
@@ -684,6 +710,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         {
             $this->assert_active_column_is_set(__METHOD__);
             $this->active_column->primary_key();
+            $this->add_indexed_cols(array($this->active_column->get_name()));
         }
         else
         {
@@ -700,6 +727,8 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
                 $this->primary_key[] = $cols[ $i ];
             }
+
+            $this->add_indexed_cols($this->primary_key);
         }
 
         return $this;
@@ -841,6 +870,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         {
             $this->assert_active_column_is_set(__METHOD__);
             $this->active_column->unique();
+            $this->add_indexed_cols(array($this->active_column->get_name()));
         }
         else
         {
@@ -860,6 +890,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
             }
 
             $this->unique_keys[] = $unique_key;
+            $this->add_indexed_cols($unique_key);
         }
 
         return $this;
@@ -911,6 +942,12 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         $this->active_column = $column;
         $this->columns[]     = $this->active_column;
 
+        return $this;
+    }
+
+    private function add_indexed_cols(array $cols)
+    {
+        $this->indexed_cols[ implode(',', $cols) ] = true;
         return $this;
     }
 
