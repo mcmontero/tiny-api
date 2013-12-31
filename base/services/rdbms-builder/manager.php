@@ -41,6 +41,8 @@ class tiny_api_Rdbms_Builder_Manager
     private $cli;
     private $modules;
     private $num_rdbms_objects;
+    private $num_rdbms_tables;
+    private $num_rdbms_indexes;
     private $connection_name;
     private $exec_sql_command;
     private $dependencies_map;
@@ -55,6 +57,8 @@ class tiny_api_Rdbms_Builder_Manager
         $this->cli                     = $cli;
         $this->modules                 = array();
         $this->num_rdbms_objects       = 0;
+        $this->num_rdbms_tables        = 0;
+        $this->num_rdbms_indexes       = 0;
         $this->dependencies_map        = array();
         $this->dependents_map          = array();
         $this->modules_to_build        = array();
@@ -182,8 +186,19 @@ class tiny_api_Rdbms_Builder_Manager
         // | Report interesting stats about the build.                  |
         // +------------------------------------------------------------+
 
-        $this->notice('Number of objects built: '
-                      . number_format($this->num_rdbms_objects));
+        $this->notice('RDBMS builder stats:');
+        $this->notice(sprintf('%-16s: %6d',
+                      '# tables',
+                      number_format($this->num_rdbms_tables)),
+                      1);
+        $this->notice(sprintf('%-16s: %6d',
+                      '# indexes',
+                      number_format($this->num_rdbms_indexes)),
+                      1);
+        $this->notice(sprintf('%-16s: %6d',
+                      'total # objects',
+                      number_format($this->num_rdbms_objects)),
+                      1);
     }
 
     final public function set_connection_name($connection_name)
@@ -368,12 +383,14 @@ class tiny_api_Rdbms_Builder_Manager
                            $statement, $matches))
             {
                 $this->notice("(+) table $db_name." . $matches[ 1 ], 2);
+                $this->num_rdbms_tables++;
                 $this->num_rdbms_objects++;
             }
             else if (preg_match("/^create index (.*?)\n/msi",
                                 $statement, $matches))
             {
                 $this->notice("(+) index $db_name." . $matches[ 1 ], 2);
+                $this->num_rdbms_indexes++;
                 $this->num_rdbms_objects++;
             }
             else if (preg_match("/^insert into/", $statement))
