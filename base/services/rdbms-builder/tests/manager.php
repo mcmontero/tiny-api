@@ -85,5 +85,18 @@ extends PHPUnit_Framework_TestCase
             _tiny_api_Rdbms_Builder_Module::make('abc', 'def')
                 ->get_name());
     }
+
+    function test_adding_and_getting_dml_files_for_rdbms_builder_module()
+    {
+        $dml_files = _tiny_api_Rdbms_Builder_Module::make('abc', 'def')
+                        ->add_dml_file('/a/b/c')
+                        ->add_dml_file('/d/e/f')
+                        ->get_dml_files();
+
+        $this->assertTrue(is_array($dml_files));
+        $this->assertEquals(2, count($dml_files));
+        $this->assertEquals('/a/b/c', $dml_files[ 0 ]);
+        $this->assertEquals('/d/e/f', $dml_files[ 1 ]);
+    }
 }
 ?>
