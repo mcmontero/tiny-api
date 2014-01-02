@@ -64,7 +64,7 @@ extends tiny_api_Base_Rdbms
         {
             throw new tiny_Api_Data_Store_Exception(
                         'transaction cannot be committed because a database '
-                        . 'connection has not be established yet');
+                        . 'connection has not been established yet');
         }
 
         if (!$this->mysql->commit())

@@ -44,6 +44,33 @@ extends tiny_api_Base_Rdbms
     // | Public Methods |
     // +----------------+
 
+    final public function autocommit_off()
+    {
+        $this->connect();
+
+        if (!pg_query($this->postgresql, 'begin transaction'))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'a transaction could not be started');
+        }
+    }
+
+    final public function commit()
+    {
+        if (is_null($this->postgresql))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'transaction cannot be committed because a database '
+                        . 'connection has not been established yet');
+        }
+
+        if (!pg_query($this->postgresql, 'commit'))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'failed to commit transaction');
+        }
+    }
+
     final public function create($target, array $data, $return_insert_id = true)
     {
         if (empty($data))
@@ -203,6 +230,15 @@ extends tiny_api_Base_Rdbms
         $this->memcache_store($results);
 
         return $results;
+    }
+
+    final public function rollback()
+    {
+        if (!pg_query($this->postgresql, 'rollback'))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'failed to rollback transaction');
+        }
     }
 
     final public function update($target,

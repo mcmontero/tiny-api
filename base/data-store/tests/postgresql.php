@@ -24,25 +24,25 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/data-store/mysql.php';
+require_once 'base/data-store/postgresql.php';
 
 // +------------------------------------------------------------+
 // | TESTS                                                      |
 // +------------------------------------------------------------+
 
-class base_Data_Store_Test_Mysql
+class base_Data_Store_Test_Postgresql
 extends PHPUnit_Framework_TestCase
 {
     function test_commit_without_connect_exceptions()
     {
-        $mysql = new tiny_api_Data_Store_Mysql();
+        $postgresql = new tiny_api_Data_Store_Postgresql();
 
         try
         {
-            $mysql->commit();
+            $postgresql->commit();
 
-            $this->fail('Was able to commit a MySQL transaction even though '
-                        . 'a connection was not established.');
+            $this->fail('Was able to commit a PostgreSQL transaction even '
+                        . 'though a connection was not established.');
         }
         catch (tiny_Api_Data_Store_Exception $e)
         {
