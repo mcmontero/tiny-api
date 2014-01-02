@@ -121,6 +121,44 @@ extends tiny_api_Base_Rdbms
         return true;
     }
 
+    final public function query($caller, $query, $binds = array())
+    {
+        if (!is_null(($results_from_cache = $this->memcache_retrieve())))
+        {
+            return $results_from_cache;
+        }
+
+        $this->connect();
+
+        $is_select = true;
+        if (!preg_match('/^select /i', $query))
+        {
+            $is_select = false;
+        }
+
+        $query          = "/* $caller */ $query";
+        $statement_name = sha1($query);
+
+        if (is_null(($dsr = $this->prepare($statement_name, $query))))
+        {
+            return null;
+        }
+
+        if (($dsr =
+                pg_execute($this->postgresql, $statement_name, $binds))
+            === false)
+        {
+            throw new tiny_Api_Data_Store_Exception(pg_result_error($dsr));
+        }
+
+        $results = $this->fetch_all_assoc($dsr);
+        pg_free_result($dsr);
+
+        $this->memcache_store($results);
+
+        return $results;
+    }
+
     final public function retrieve($target,
                                    array $cols,
                                    array $where = null,
