@@ -44,6 +44,36 @@ extends tiny_api_Base_Rdbms
     // | Public Methods |
     // +----------------+
 
+    final public function autocommit_off()
+    {
+        $this->connect();
+
+        $this->mysql->autocommit(false);
+    }
+
+    final public function autocommit_on()
+    {
+        $this->connect();
+
+        $this->mysql->autocommit(true);
+    }
+
+    final public function commit()
+    {
+        if (is_null($this->mysql))
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'transaction cannot be committed because a database '
+                        . 'connection has not be established yet');
+        }
+
+        if (!$this->mysql->commit())
+        {
+            throw new tiny_Api_Data_Store_Exception(
+                        'transaction commit failed');
+        }
+    }
+
     final public function create($target, array $data, $return_insert_id = true)
     {
         if (empty($data))
@@ -197,6 +227,11 @@ extends tiny_api_Base_Rdbms
         $this->memcache_store($results);
 
         return $results;
+    }
+
+    final public function rollback()
+    {
+        $this->mysql->rollback();
     }
 
     final public function update($target,

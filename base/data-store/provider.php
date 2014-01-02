@@ -64,6 +64,12 @@ extends tiny_api_Base_Data_Store
     // | Public Methods |
     // +----------------+
 
+    public function autocommit_off() {}
+
+    public function autocommit_on() {}
+
+    public function commit() {}
+
     public function create($target,
                            array $data,
                            $return_insert_id = true)
@@ -97,6 +103,8 @@ extends tiny_api_Base_Data_Store
     {
         return null;
     }
+
+    public function rollback() {}
 
     final public function select_db($connection, $db)
     {
