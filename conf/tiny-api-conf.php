@@ -40,11 +40,10 @@ $__tiny_api_conf__ = array(
      * Supported values include:
      *
      *  mysql
-     *      configure "mysql.default_host", "mysql.default_user", and
-     *      "mysql.default_password" in php.ini
+     *      configure "mysql connection data" below.
      *
      *  postgresql
-     *      configure "postgresql connection string" located in this file
+     *      configure "postgres connection data" below.
      */
     'data store' =>
         'mysql',
