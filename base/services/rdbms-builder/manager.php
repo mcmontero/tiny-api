@@ -528,9 +528,7 @@ class tiny_api_Rdbms_Builder_Manager
                 if (array_key_exists($name[ 0 ],
                                      $this->modules_to_build_prefix))
                 {
-                    $this->notice('(-) foreign key '
-                                  . $constraint[ 'constraint_name' ],
-                                  1);
+                    $this->notice('(-) ' . $constraint[ 'constraint_name' ], 1);
 
                     dsh()->query
                     (
