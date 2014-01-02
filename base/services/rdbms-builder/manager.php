@@ -262,7 +262,7 @@ class tiny_api_Rdbms_Builder_Manager
                 $build_func  = null;
                 $prefix      = null;
 
-                if (preg_match('#(.*?)/sql/build.php$#', $file, $matches))
+                if (preg_match('#(.*?)/sql/ddl/build.php$#', $file, $matches))
                 {
                     $module_name = preg_replace("#$path/?#", '', $matches[ 1 ]);
 

@@ -28,7 +28,7 @@ function main(tiny_api_Cli $cli)
     $cli->header('Show SQL');
 
     $module     = $cli->get_arg('module');
-    $build_file = stream_resolve_include_path("$module/sql/build.php");
+    $build_file = stream_resolve_include_path("$module/sql/ddl/build.php");
     if ($build_file === false)
     {
         $cli->warn("Module \"$module\" does not have a build file.");
