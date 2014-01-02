@@ -24,7 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/data-store/mysql-myisam.php';
+require_once 'base/data-store/mysql.php';
 
 // +------------------------------------------------------------+
 // | TESTS                                                      |
@@ -35,7 +35,7 @@ extends PHPUnit_Framework_TestCase
 {
     function test_commit_without_connect_exceptions()
     {
-        $mysql = new tiny_api_Data_Store_Mysql_Myisam();
+        $mysql = new tiny_api_Data_Store_Mysql();
 
         try
         {

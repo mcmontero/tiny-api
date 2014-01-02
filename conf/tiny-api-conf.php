@@ -39,7 +39,7 @@ $__tiny_api_conf__ = array(
      *
      * Supported values include:
      *
-     *  mysql (myisam)
+     *  mysql
      *      configure "mysql.default_host", "mysql.default_user", and
      *      "mysql.default_password" in php.ini
      *
@@ -47,7 +47,7 @@ $__tiny_api_conf__ = array(
      *      configure "postgresql connection string" located in this file
      */
     'data store' =>
-        'mysql (myisam)',
+        'mysql',
         //'postgresql',
 
     /**

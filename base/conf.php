@@ -24,10 +24,10 @@
 // | PUBLIC FUNCTIONS                                           |
 // +------------------------------------------------------------+
 
-function tiny_api_is_data_store_mysql_myisam()
+function tiny_api_is_data_store_mysql()
 {
     global $__tiny_api_conf__;
 
-    return $__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)';
+    return $__tiny_api_conf__[ 'data store' ] == 'mysql';
 }
 ?>

@@ -33,14 +33,14 @@ require_once 'base/conf.php';
 class base_Test_Conf
 extends PHPUnit_Framework_TestCase
 {
-    function test_is_data_store_mysql_myisam()
+    function test_is_data_store_mysql()
     {
         global $__tiny_api_conf__;
 
         $last_data_store = $__tiny_api_conf__[ 'data store' ];
-        $__tiny_api_conf__[ 'data store' ] = 'mysql (myisam)';
+        $__tiny_api_conf__[ 'data store' ] = 'mysql';
 
-        $this->assertTrue(tiny_api_is_data_store_mysql_myisam());
+        $this->assertTrue(tiny_api_is_data_store_mysql());
 
         $__tiny_api_conf__[ 'data store' ] = $last_data_store;
     }

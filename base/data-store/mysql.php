@@ -25,12 +25,12 @@
 // +------------------------------------------------------------+
 
 //
-// +----------------------------------+
-// | tiny_api_Data_Store_Mysql_Myisam |
-// +----------------------------------+
+// +---------------------------+
+// | tiny_api_Data_Store_Mysql |
+// +---------------------------+
 //
 
-class tiny_api_Data_Store_Mysql_Myisam
+class tiny_api_Data_Store_Mysql
 extends tiny_api_Base_Rdbms
 {
     private $mysql;

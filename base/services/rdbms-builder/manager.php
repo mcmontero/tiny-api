@@ -403,7 +403,7 @@ class tiny_api_Rdbms_Builder_Manager
 
         $sha1 = sha1(file_get_contents($module->get_build_file()));
 
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             dsh()->query
             (
@@ -455,7 +455,7 @@ class tiny_api_Rdbms_Builder_Manager
         {
             $sha1 = sha1(file_get_contents($module->get_build_file()));
 
-            if (tiny_api_is_data_store_mysql_myisam())
+            if (tiny_api_is_data_store_mysql())
             {
                 $results = dsh()->query
                 (
@@ -511,7 +511,7 @@ class tiny_api_Rdbms_Builder_Manager
     {
         $this->notice('Dropping relevant foreign key constraints...');
 
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             $constraints = dsh()->query
             (
@@ -555,7 +555,7 @@ class tiny_api_Rdbms_Builder_Manager
     {
         $this->notice('Dropping objects that will be rebuilt...');
 
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             $tables = dsh()->query
             (
@@ -594,7 +594,7 @@ class tiny_api_Rdbms_Builder_Manager
 
     private function enhance_build_error(array $output)
     {
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             if (preg_match('/^ERROR 1005/', $output[ 0 ]) &&
                 preg_match('/errno: 150/', $output[ 0 ]))
@@ -649,7 +649,7 @@ class tiny_api_Rdbms_Builder_Manager
             return $this->exec_sql_command;
         }
 
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             if (empty($this->connection_name))
             {
@@ -749,7 +749,7 @@ class tiny_api_Rdbms_Builder_Manager
     {
         global $__tiny_api_conf__;
 
-        if (tiny_api_is_data_store_mysql_myisam())
+        if (tiny_api_is_data_store_mysql())
         {
             $dsh = tiny_api_Data_Store_Provider::get_instance()
                     ->get_data_store_handle()

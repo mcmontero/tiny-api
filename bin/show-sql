@@ -35,7 +35,7 @@ function main(tiny_api_Cli $cli)
         $cli->cli_exit();
     }
 
-    if ($__tiny_api_conf__[ 'data store' ] == 'mysql (myisam)')
+    if ($__tiny_api_conf__[ 'data store' ] == 'mysql')
     {
         require_once 'base/services/table-builder/mysql.php';
     }

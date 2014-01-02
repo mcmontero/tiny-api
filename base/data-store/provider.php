@@ -212,12 +212,12 @@ class tiny_api_Data_Store_Provider
 
     final public function get_data_store_handle()
     {
-        if ($this->tiny_api_conf[ 'data store' ] == 'mysql (myisam)')
+        if ($this->tiny_api_conf[ 'data store' ] == 'mysql')
         {
             if (is_null($this->dsh))
             {
-                require_once 'base/data-store/mysql-myisam.php';
-                $this->dsh = new tiny_api_Data_Store_Mysql_Myisam();
+                require_once 'base/data-store/mysql.php';
+                $this->dsh = new tiny_api_Data_Store_Mysql();
             }
 
             return $this->dsh;
