@@ -56,7 +56,7 @@ $__tiny_api_conf__ = array(
      * occur.
      */
     'favicon.ico redirect url' =>
-        'http://google.com//images/google_favicon_128.png',
+        'http://google.com/images/google_favicon_128.png',
 
     /**
      * An array of Memcached servers to use for caching.  The array should
