@@ -151,7 +151,7 @@ extends tiny_api_Base_Rdbms
         $this->connect();
 
         $is_select = true;
-        if (!preg_match('/^select /i', $query) &&
+        if (!preg_match('/^\(?select /i', $query) &&
             !preg_match('/^show /i', $query))
         {
             $is_select = false;
