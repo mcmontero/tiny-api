@@ -97,7 +97,9 @@ class tiny_api_Rdbms_Builder_Manager
         // +------------------------------------------------------------+
         // | Step 2                                                     |
         // |                                                            |
-        // | Create RDBMS builder objects.                              |
+        // | Verify that the RDBMS builder database objects exist and   |
+        // | if they do not, alert with instructions on how to make     |
+        // | them.                                                      |
         // +------------------------------------------------------------+
 
         $this->verify_rdbms_builder_objects();
@@ -105,7 +107,8 @@ class tiny_api_Rdbms_Builder_Manager
         // +------------------------------------------------------------+
         // | Step 3                                                     |
         // |                                                            |
-        // | Assemble all modules.                                      |
+        // | Create an array containing data about all modules that     |
+        // | exist in this API.                                         |
         // +------------------------------------------------------------+
 
         $this->assemble_all_modules();
@@ -430,6 +433,8 @@ class tiny_api_Rdbms_Builder_Manager
 
                 $this->num_rdbms_routines++;
             }
+
+            $this->track_module_info($file);
         }
     }
 
@@ -461,32 +466,7 @@ class tiny_api_Rdbms_Builder_Manager
             $this->execute_statement($statement, $db_name);
         }
 
-        $sha1 = sha1(file_get_contents($module->get_build_file()));
-
-        if (tiny_api_is_data_store_mysql())
-        {
-            dsh()->query
-            (
-                __METHOD__,
-                'insert into rdbms_builder.module_info
-                 (
-                    build_file,
-                    sha1
-                 )
-                 values
-                 (
-                    ?,
-                    ?
-                 )
-                 on duplicate key
-                 update sha1 = ?',
-                array($module->get_build_file(), $sha1, $sha1)
-            );
-        }
-        else
-        {
-            $this->data_store_not_supported();
-        }
+        $this->track_module_info($module->get_build_file());
 
         return true;
     }
@@ -513,27 +493,25 @@ class tiny_api_Rdbms_Builder_Manager
     {
         foreach ($this->modules as $module)
         {
-            $sha1 = sha1(file_get_contents($module->get_build_file()));
+            $requires_build = false;
 
-            if (tiny_api_is_data_store_mysql())
+            if ($this->file_has_been_modified($module->get_build_file()))
             {
-                $results = dsh()->query
-                (
-                    __METHOD__,
-                    'select sha1
-                       from rdbms_builder.module_info
-                      where build_file = ?',
-                    array($module->get_build_file())
-                );
+                $requires_build = true;
             }
             else
             {
-                $this->data_store_not_supported();
+                foreach ($module->get_dml_files() as $file)
+                {
+                    if ($this->file_has_been_modified($file))
+                    {
+                        $requires_build = true;
+                        break;
+                    }
+                }
             }
 
-            if (!array_key_exists(0, $results) ||
-                !array_key_exists('sha1', $results[ 0 ]) ||
-                $results[ 0 ][ 'sha1' ] != $sha1)
+            if ($requires_build)
             {
                 $this->notice('(+) ' . $module->get_name(), 1);
                 $this->compile_build_list_for_module($module->get_name());
@@ -725,6 +703,29 @@ class tiny_api_Rdbms_Builder_Manager
         unlink($temp_file);
     }
 
+    private function file_has_been_modified($file)
+    {
+        if (tiny_api_is_data_store_mysql())
+        {
+            $results = dsh()->query
+            (
+                __METHOD__,
+                'select sha1
+                   from rdbms_builder.module_info
+                  where file = ?',
+                array($file)
+            );
+        }
+        else
+        {
+            $this->data_store_not_supported();
+        }
+
+        return !array_key_exists(0, $results)           ||
+               !array_key_exists('sha1', $results[ 0 ]) ||
+               $results[ 0 ][ 'sha1' ] != sha1(file_get_contents($file));
+    }
+
     private function get_exec_sql_command()
     {
         global $__tiny_api_conf__;
@@ -820,6 +821,36 @@ class tiny_api_Rdbms_Builder_Manager
         }
     }
 
+    private function track_module_info($file)
+    {
+        $sha1 = sha1(file_get_contents($file));
+
+        if (tiny_api_is_data_store_mysql())
+        {
+            dsh()->query
+            (
+                __METHOD__,
+                'insert into rdbms_builder.module_info
+                 (
+                    file,
+                    sha1
+                 )
+                 values
+                 (
+                    ?,
+                    ?
+                 )
+                 on duplicate key
+                 update sha1 = ?',
+                array($file, $sha1, $sha1)
+            );
+        }
+        else
+        {
+            $this->data_store_not_supported();
+        }
+    }
+
     private function verify_foreign_key_indexes()
     {
         $this->notice('Verifying foreign key indexes...');
@@ -880,7 +911,7 @@ create database rdbms_builder;
 
 create table rdbms_builder.module_info
 (
-    build_file varchar(100) not null primary key,
+    file varchar(100) not null primary key,
     sha1 char(40) not null
 );
 
