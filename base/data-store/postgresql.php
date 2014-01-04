@@ -44,7 +44,7 @@ extends tiny_api_Base_Rdbms
     // | Public Methods |
     // +----------------+
 
-    final public function autocommit_off()
+    final public function begin_transaction()
     {
         $this->connect();
 

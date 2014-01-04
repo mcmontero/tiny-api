@@ -64,9 +64,7 @@ extends tiny_api_Base_Data_Store
     // | Public Methods |
     // +----------------+
 
-    public function autocommit_off() {}
-
-    public function autocommit_on() {}
+    public function begin_transaction() {}
 
     public function commit() {}
 

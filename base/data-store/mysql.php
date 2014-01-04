@@ -44,18 +44,11 @@ extends tiny_api_Base_Rdbms
     // | Public Methods |
     // +----------------+
 
-    final public function autocommit_off()
+    final public function begin_transaction()
     {
         $this->connect();
 
         $this->mysql->autocommit(false);
-    }
-
-    final public function autocommit_on()
-    {
-        $this->connect();
-
-        $this->mysql->autocommit(true);
     }
 
     final public function commit()
@@ -72,6 +65,8 @@ extends tiny_api_Base_Rdbms
             throw new tiny_Api_Data_Store_Exception(
                         'transaction commit failed');
         }
+
+        $this->mysql->autocommit(true);
     }
 
     final public function create($target, array $data, $return_insert_id = true)
@@ -84,7 +79,7 @@ extends tiny_api_Base_Rdbms
         $this->connect();
 
         $keys  = array_keys($data);
-        $binds = $this->get_binds($keys);
+        $binds = $this->get_binds($data);
         $vals  = array_values($data);
 
         $query = "insert into $target ("
@@ -232,6 +227,7 @@ extends tiny_api_Base_Rdbms
     final public function rollback()
     {
         $this->mysql->rollback();
+        $this->mysql->autocommit(true);
     }
 
     final public function update($target,
@@ -288,28 +284,36 @@ extends tiny_api_Base_Rdbms
         $vals      = array();
         for ($i = 0; $i < $num_binds; $i++)
         {
-            if (is_string($binds[ $i ]))
+            if ($this->param_is_bindable($binds[ $i ]))
             {
-                $types .= 's';
-            }
-            else if (is_int($binds[ $i ]))
-            {
-                $types .= 'i';
-            }
-            else if (is_float($binds[ $i ]))
-            {
-                $types .= 'd';
-            }
-            else
-            {
-                $types .= 's';
-            }
+                if (is_string($binds[ $i ]))
+                {
+                    $types .= 's';
+                }
+                else if (is_int($binds[ $i ]))
+                {
+                    $types .= 'i';
+                }
+                else if (is_float($binds[ $i ]))
+                {
+                    $types .= 'd';
+                }
+                else
+                {
+                    $types .= 's';
+                }
 
-            $vals[] = &$binds[ $i ];
+                $vals[] = &$binds[ $i ];
+            }
         }
 
-        call_user_func_array(array($dss, 'bind_param'),
-                             array_merge(array($types), $vals));
+        if (count($vals) > 0)
+        {
+            // There might not be any values to bind because something like
+            // current_timestamp was the only value passed to the query.
+            call_user_func_array(array($dss, 'bind_param'),
+                                 array_merge(array($types), $vals));
+        }
 
         return true;
     }
@@ -409,20 +413,32 @@ extends tiny_api_Base_Rdbms
         return $results;
     }
 
-    private function get_binds($keys)
+    private function get_binds(array $data)
     {
-        if (empty($keys))
+        if (empty($data))
         {
             return array();
         }
 
         $binds = array();
-        foreach ($keys as $junk)
+        foreach ($data as $column => $value)
         {
-            $binds[] = '?';
+            if (!$this->param_is_bindable($value))
+            {
+                $binds[] = $value;
+            }
+            else
+            {
+                $binds[] = '?';
+            }
         }
 
         return $binds;
+    }
+
+    private function param_is_bindable($value)
+    {
+        return !array_key_exists($value, array('current_timestamp' => true));
     }
 }
 ?>
