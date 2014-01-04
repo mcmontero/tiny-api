@@ -40,8 +40,16 @@ function main(tiny_api_Cli $cli)
         require_once 'base/services/table-builder/mysql.php';
     }
 
+    if (!preg_match('/function (.*?)_build\s?\(/msi',
+                    file_get_contents($build_file),
+                    $matches))
+    {
+        throw new tiny_api_Exception('could not find module prefix');
+    }
+    $prefix = $matches[ 1 ];
+
     require_once $build_file;
-    $func = $module . "_build";
+    $func = $prefix . "_build";
     $objs = $func();
 
     foreach ($objs as $obj)
