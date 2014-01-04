@@ -517,6 +517,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
             return null;
         }
 
+        $rows = array();
         foreach ($this->rows as $row)
         {
             ob_start();
@@ -535,10 +536,21 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
             $values = array();
             foreach ($row as $value)
             {
-                $values[] = "    '$value'";
+                if (!array_key_exists($value, array('current_timestamp' => 1)))
+                {
+                    $values[] = "    '$value'";
+                }
+                else
+                {
+                    $values[] = "    $value";
+                }
             }
             print implode(",\n", $values) . "\n);\n\n";
+
+            $rows[] = ob_get_clean();
         }
+
+        return $rows;
     }
 
     final public function get_dependencies()
@@ -1504,6 +1516,11 @@ extends _tiny_api_Mysql_Column
         if (!is_null($this->not_null))
         {
             $terms[] = 'not null';
+        }
+
+        if ($this->unique === true)
+        {
+            $terms[] = 'unique';
         }
 
         if (!is_null($this->charset))
