@@ -232,25 +232,28 @@ class tiny_api_Rdbms_Builder_Manager
     {
         $this->notice('Adding foreign key constraints...');
 
-        foreach ($this->foreign_keys as $module_name => $fk)
+        foreach ($this->foreign_keys as $module_name => $fks)
         {
             if (array_key_exists($module_name, $this->modules_to_build))
             {
-                list($db_name, $foreign_key) = $fk;
-
-                if (!preg_match('/add constraint (.*?) /msi',
-                                $foreign_key, $matches))
+                foreach ($fks as $fk)
                 {
-                    throw new tiny_api_Rdbms_Builder_Exception(
-                                "could not find name of constraint in "
-                                . "statement:\n"
-                                . $foreign_key);
+                    list($db_name, $foreign_key) = $fk;
+
+                    if (!preg_match('/add constraint (.*?) /msi',
+                                    $foreign_key, $matches))
+                    {
+                        throw new tiny_api_Rdbms_Builder_Exception(
+                                    "could not find name of constraint in "
+                                    . "statement:\n"
+                                    . $foreign_key);
+                    }
+
+                    $this->execute_statement($foreign_key, $db_name);
+                    $this->notice("(+) " . trim($matches[ 1 ]), 1);
+
+                    $this->num_rdbms_objects++;
                 }
-
-                $this->execute_statement($foreign_key, $db_name);
-                $this->notice("(+) " . trim($matches[ 1 ]), 1);
-
-                $this->num_rdbms_objects++;
             }
         }
     }
@@ -362,17 +365,20 @@ class tiny_api_Rdbms_Builder_Manager
                             $inserts = $obj->get_insert_statements();
                             if (!empty($inserts))
                             {
-                                $sql[] = array
-                                (
-                                    $obj->get_db_name(),
-                                    $inserts,
-                                );
+                                foreach ($inserts as $insert)
+                                {
+                                    $sql[] = array
+                                    (
+                                        $obj->get_db_name(),
+                                        $insert,
+                                    );
+                                }
                             }
 
                             $fks = $obj->get_foreign_key_definitions();
                             foreach ($fks as $fk)
                             {
-                                $this->foreign_keys[ $module_name ] = array
+                                $this->foreign_keys[ $module_name ][] = array
                                 (
                                     $obj->get_db_name(),
                                     "$fk;",
