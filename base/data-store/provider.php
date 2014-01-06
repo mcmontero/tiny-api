@@ -64,9 +64,15 @@ extends tiny_api_Base_Data_Store
     // | Public Methods |
     // +----------------+
 
-    public function begin_transaction() {}
+    public function begin_transaction()
+    {
+        return $this;
+    }
 
-    public function commit() {}
+    public function commit()
+    {
+        return $this;
+    }
 
     public function create($target,
                            array $data,
@@ -102,7 +108,10 @@ extends tiny_api_Base_Data_Store
         return null;
     }
 
-    public function rollback() {}
+    public function rollback()
+    {
+        return $this;
+    }
 
     final public function select_db($connection, $db)
     {
