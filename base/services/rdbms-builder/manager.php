@@ -119,17 +119,25 @@ class tiny_api_Rdbms_Builder_Manager
         // | Compile the list of modules that need to be built.         |
         // +------------------------------------------------------------+
 
-        $module_name = $this->cli->get_arg('module-name');
-        if (!empty($module_name))
+        if (!is_null($this->cli) && $this->cli->get_arg('--all'))
         {
-            $this->notice('Compiling build list for specified module...');
-            $this->notice("(+) $module_name", 1);
-            $this->compile_build_list_for_module($module_name);
+            $this->notice('Compiling build list of all modules...');
+            $this->compile_build_list_for_all_modules();
         }
         else
         {
-            $this->notice('Compiling build list based on changes...');
-            $this->compile_build_list_by_changes();
+            $module_name = $this->cli->get_arg('module-name');
+            if (!empty($module_name))
+            {
+                $this->notice('Compiling build list for specified module...');
+                $this->notice("(+) $module_name", 1);
+                $this->compile_build_list_for_module($module_name);
+            }
+            else
+            {
+                $this->notice('Compiling build list based on changes...');
+                $this->compile_build_list_by_changes();
+            }
         }
 
         // +------------------------------------------------------------+
@@ -522,6 +530,14 @@ class tiny_api_Rdbms_Builder_Manager
                 $this->notice('(+) ' . $module->get_name(), 1);
                 $this->compile_build_list_for_module($module->get_name());
             }
+        }
+    }
+
+    private function compile_build_list_for_all_modules()
+    {
+        foreach ($this->modules as $module_name => $module)
+        {
+            $this->compile_build_list_for_module($module_name);
         }
     }
 

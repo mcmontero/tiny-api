@@ -23,7 +23,10 @@ tiny_api_cli_main(
                   true)
         ->add_arg('module-name',
                   'A specific module to build.',
-                  false),
+                  false)
+        ->add_option('--all',
+                     'Force a rebuild of all modules.',
+                     false),
     'main');
 
 // +------------------------------------------------------------+
