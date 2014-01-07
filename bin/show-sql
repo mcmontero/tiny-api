@@ -64,7 +64,11 @@ function main(tiny_api_Cli $cli)
                 print "$index;\n\n";
             }
 
-            print $obj->get_insert_statements();
+            $inserts = $obj->get_insert_statements();
+            foreach ($inserts as $insert)
+            {
+                print $insert;
+            }
 
             $foreign_keys = $obj->get_foreign_key_definitions();
             foreach ($foreign_keys as $foreign_key)

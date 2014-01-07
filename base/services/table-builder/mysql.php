@@ -16,6 +16,7 @@ class tiny_api_Ref_Table
     private $name;
     private $values;
     private $display_orders;
+    private $display_order;
 
     function __construct($db_name, $name)
     {
@@ -25,6 +26,7 @@ class tiny_api_Ref_Table
         $this->name           = $name;
         $this->values         = array();
         $this->display_orders = array();
+        $this->display_order  = 1;
     }
 
     static function make($db_name, $name)
@@ -53,6 +55,11 @@ class tiny_api_Ref_Table
                         . "defined");
         }
 
+        if (is_null($display_order))
+        {
+            $display_order = $this->display_order++;
+        }
+
         $this->values[ $id ] = array($value, $display_order);
         $this->display_orders[ $display_order ] = true;
 
@@ -73,7 +80,7 @@ class tiny_api_Ref_Table
         }
 
         $table = tiny_api_Table::make($this->db_name, $this->name)
-                    ->id()
+                    ->id('id', true, true)
                     ->vchar('value', 100, true)
                     ->int('display_order');
 
@@ -370,6 +377,11 @@ class tiny_api_Table
             }
         }
 
+        if (is_null($parent_cols))
+        {
+            $parent_cols = array('id');
+        }
+
         $this->foreign_keys[] = array(
             $parent_table,
             (bool)$on_delete_cascade,
@@ -581,9 +593,30 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $unindexed;
     }
 
-    final public function id()
+    final public function id($name, $unique = false, $serial = false)
     {
-        $this->serial('id');
+        if ($name != 'id' && !preg_match('/_id$/', $name))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'an ID column must be named "id" or end in "_id"');
+        }
+
+        $this->add_column(
+            _tiny_api_Mysql_Numeric_Column::make($name)
+                ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIGINT)
+                ->unsigned()
+                ->not_null());
+
+        if ($unique)
+        {
+            $this->active_column->unique();
+        }
+
+        if ($serial)
+        {
+            $this->active_column->auto_increment();
+        }
+
         return $this;
     }
 
@@ -746,16 +779,9 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
-    final public function serial($name)
+    final public function serial($name = 'id')
     {
-        $this->add_column(
-            _tiny_api_Mysql_Numeric_Column::make($name)
-                ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_BIGINT)
-                ->unsigned()
-                ->not_null()
-                ->auto_increment()
-                ->unique());
-
+        $this->id($name, true, true)->pk();
         return $this;
     }
 

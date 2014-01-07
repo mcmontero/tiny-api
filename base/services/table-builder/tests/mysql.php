@@ -226,7 +226,7 @@ create table abc
             trim(ob_get_clean()),
             tiny_api_Table::make('db', 'abc')
                 ->engine('InnoDB')
-                ->id()
+                ->id('id', true, true)
                 ->get_definition());
     }
 
@@ -245,7 +245,7 @@ create table abc
             trim(ob_get_clean()),
             tiny_api_Table::make('db', 'abc')
                 ->engine('MyISAM')
-                ->id()
+                ->id('id', true, true)
                 ->bool('def')
                 ->float('ghi', 12)
                 ->get_definition());
@@ -324,7 +324,7 @@ create temporary table abc
             trim(ob_get_clean()),
             tiny_api_Table::make('db', 'abc')
                 ->temp()
-                ->id()
+                ->id('id', true, true)
                 ->get_definition());
     }
 
@@ -607,7 +607,7 @@ create table abc
         $this->assertEquals(
             trim(ob_get_clean()),
             tiny_api_Table::make('db', 'abc')
-                ->id()
+                ->id('id', true, true)
                 ->created()
                 ->get_definition());
     }
@@ -634,7 +634,7 @@ create table abc
         $this->assertEquals(
             trim(ob_get_clean()),
             tiny_api_Table::make('db', 'abc')
-                ->id()
+                ->id('id', true, true)
                 ->updated()
                 ->get_definition());
     }
@@ -1133,7 +1133,9 @@ create table abc
 );
 <?
         $expected = trim(ob_get_clean());
-        $table    = tiny_api_Table::make('db', 'abc')->id()->fk('def');
+        $table    = tiny_api_Table::make('db', 'abc')
+                        ->id('id', true, true)
+                        ->fk('def');
 
         $this->assertEquals($expected, $table->get_definition());
 
@@ -1142,7 +1144,7 @@ create table abc
    alter table abc
 add constraint abc_0_fk
    foreign key (id)
-    references def
+    references def (id)
      on delete cascade
 <?
         $expected = trim(ob_get_clean(), "\t\n\r\0\x0B");
@@ -1291,6 +1293,116 @@ add constraint abc_0_fk
         $this->assertEquals(
             'db',
             tiny_api_Table::make('db', 'abc')->get_db_name());
+    }
+
+    function test_table_serial()
+    {
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null auto_increment unique primary key
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('db', 'abc')
+                ->serial()
+                ->get_definition());
+    }
+
+    function test_table_serial_modified_name()
+    {
+        ob_start();
+?>
+create table abc
+(
+    a_id bigint unsigned not null auto_increment unique primary key
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('db', 'abc')
+                ->serial('a_id')
+                ->get_definition());
+    }
+
+    function test_id_column_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('db', 'abc')->id('def');
+
+            $this->fail('Was able to create ID column even though the name '
+                        . 'provided was invalid.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals(
+                'an ID column must be named "id" or end in "_id"',
+                $e->get_text());
+        }
+    }
+
+    function test_table_id_all_defaults()
+    {
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('db', 'abc')
+                ->id('id')
+                ->get_definition());
+    }
+
+    function test_table_id()
+    {
+        ob_start();
+?>
+create table abc
+(
+    a_id bigint unsigned not null auto_increment unique
+);
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('db', 'abc')
+                ->id('a_id', true, true)
+                ->get_definition());
+    }
+
+    function test_pk_and_fk_on_same_active_column()
+    {
+        $table = tiny_api_Table::make('db', 'abc')
+                    ->id('id', true, true)
+                        ->pk()
+                        ->fk('def');
+
+        ob_start();
+?>
+create table abc
+(
+    id bigint unsigned not null auto_increment unique primary key
+);
+<?
+        $this->assertEquals(trim(ob_get_clean()), $table->get_definition());
+
+        ob_start();
+?>
+   alter table abc
+add constraint abc_0_fk
+   foreign key (id)
+    references def (id)
+     on delete cascade
+<?
+        $fks = $table->get_foreign_key_definitions();
+        $this->assertEquals(1, count($fks));
+        $this->assertEquals(trim(ob_get_clean(), "\t\n\r\0\x0B"), $fks[ 0 ]);
     }
 }
 ?>
