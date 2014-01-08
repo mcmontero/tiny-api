@@ -65,9 +65,12 @@ function main(tiny_api_Cli $cli)
             }
 
             $inserts = $obj->get_insert_statements();
-            foreach ($inserts as $insert)
+            if (!empty($inserts))
             {
-                print $insert;
+                foreach ($inserts as $insert)
+                {
+                    print "$insert\n\n";
+                }
             }
 
             $foreign_keys = $obj->get_foreign_key_definitions();

@@ -220,7 +220,7 @@ extends PHPUnit_Framework_TestCase
 create table abc
 (
     id bigint unsigned not null auto_increment unique
-) engine = innodb;
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -239,7 +239,7 @@ create table abc
     id bigint unsigned not null auto_increment unique,
     def tinyint(1),
     ghi float(12)
-) engine = myisam;
+) engine = myisam default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -259,7 +259,7 @@ create table abc
 (
     def int,
     ghi int unsigned zerofill
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -279,7 +279,7 @@ create table abc
     ghi int unique,
     jkl int auto_increment,
     mno int default '123'
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -301,7 +301,7 @@ create table abc
 create table abc
 (
     def int primary key
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -318,7 +318,7 @@ create table abc
 create temporary table abc
 (
     id bigint unsigned not null auto_increment unique
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -359,7 +359,7 @@ create table abc
     def int,
     ghi int,
     primary key abc_pk (def, ghi)
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -402,7 +402,7 @@ create table abc
     ghi int,
     jkl int,
     unique key abc_0_uk (def, ghi)
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -425,7 +425,7 @@ create table abc
     jkl int,
     unique key abc_0_uk (def, ghi),
     unique key abc_1_uk (ghi, jkl)
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -540,7 +540,7 @@ create table abc
     jkl timestamp not null,
     mno time not null,
     pqr year(4) not null
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -564,7 +564,7 @@ create table abc
     jkl timestamp,
     mno time,
     pqr year(2)
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -602,7 +602,7 @@ create table abc
 (
     id bigint unsigned not null auto_increment unique,
     date_created datetime not null
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -629,7 +629,7 @@ create table abc
 (
     id bigint unsigned not null auto_increment unique,
     date_updated timestamp not null on update current_timestamp
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -879,21 +879,21 @@ create table abc
 ?>
 create table abc
 (
-    def char(15) not null,
-    ghi varchar(16) not null,
-    jkl binary(17) not null,
-    mno varbinary(18) not null,
-    pqr tinyblob not null,
-    stu blob(19) not null,
-    vwx mediumblob not null,
-    yza longblob not null,
-    bcd tinytext not null,
-    efg text(20) not null,
-    hij mediumtext not null,
-    klm longtext not null,
-    nop enum('a', 'b') not null,
-    qrs set('c', 'd') not null
-);
+    def char(15) not null collate utf8_unicode_ci,
+    ghi varchar(16) not null collate utf8_unicode_ci,
+    jkl binary(17) not null collate utf8_unicode_ci,
+    mno varbinary(18) not null collate utf8_unicode_ci,
+    pqr tinyblob not null collate utf8_unicode_ci,
+    stu blob(19) not null collate utf8_unicode_ci,
+    vwx mediumblob not null collate utf8_unicode_ci,
+    yza longblob not null collate utf8_unicode_ci,
+    bcd tinytext not null collate utf8_unicode_ci,
+    efg text(20) not null collate utf8_unicode_ci,
+    hij mediumtext not null collate utf8_unicode_ci,
+    klm longtext not null collate utf8_unicode_ci,
+    nop enum('a', 'b') not null collate utf8_unicode_ci,
+    qrs set('c', 'd') not null collate utf8_unicode_ci
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -983,10 +983,14 @@ create table abc
 create table abc_ref_def
 (
     id bigint unsigned not null auto_increment unique,
-    value varchar(100) not null,
+    value varchar(100) not null collate utf8_unicode_ci,
     display_order int
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+<?
+        $table_definition = trim(ob_get_clean());
 
+        ob_start()
+?>
 insert into abc_ref_def
 (
     id,
@@ -995,9 +999,9 @@ insert into abc_ref_def
 )
 values
 (
-    1,
+    '1',
     'one',
-    1
+    '1'
 );
 insert into abc_ref_def
 (
@@ -1007,9 +1011,9 @@ insert into abc_ref_def
 )
 values
 (
-    2,
+    '2',
     'two',
-    2
+    '2'
 );
 insert into abc_ref_def
 (
@@ -1019,18 +1023,29 @@ insert into abc_ref_def
 )
 values
 (
-    3,
+    '3',
     'three',
-    3
+    '3'
 );
 <?
-        $this->assertEquals(
-            ob_get_clean(),
-            tiny_api_Ref_Table::make('db', 'abc_ref_def')
-                ->add(1, 'one', 1)
-                ->add(2, 'two', 2)
-                ->add(3, 'three', 3)
-                ->get_definition());
+        $insert_statements = ob_get_clean();
+
+        $ref_table = tiny_api_Ref_Table::make('db', 'abc_ref_def')
+                        ->add(1, 'one', 1)
+                        ->add(2, 'two', 2)
+                        ->add(3, 'three', 3);
+
+        $this->assertEquals($table_definition,
+                            $ref_table->get_definition());
+
+        ob_start();
+
+        foreach ($ref_table->get_insert_statements() as $insert_statement)
+        {
+            print "$insert_statement\n";
+        }
+
+        $this->assertEquals(ob_get_clean(), $insert_statements);
     }
 
     function test_table_ai_active_column_is_set()
@@ -1130,7 +1145,7 @@ values
 create table abc
 (
     id bigint unsigned not null auto_increment unique
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $expected = trim(ob_get_clean());
         $table    = tiny_api_Table::make('db', 'abc')
@@ -1275,7 +1290,7 @@ add constraint abc_0_fk
     function test_text_type_with_no_length()
     {
         $this->assertEquals(
-            'abc text',
+            'abc text collate utf8_unicode_ci',
             _tiny_api_Mysql_String_Column::make('abc')
                 ->text_type(_tiny_api_Mysql_String_Column::TYPE_TEXT)
                 ->get_definition());
@@ -1302,7 +1317,7 @@ add constraint abc_0_fk
 create table abc
 (
     id bigint unsigned not null auto_increment unique primary key
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -1318,7 +1333,7 @@ create table abc
 create table abc
 (
     a_id bigint unsigned not null auto_increment unique primary key
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -1351,7 +1366,7 @@ create table abc
 create table abc
 (
     id bigint unsigned not null
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -1367,7 +1382,7 @@ create table abc
 create table abc
 (
     a_id bigint unsigned not null auto_increment unique
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(
             trim(ob_get_clean()),
@@ -1388,7 +1403,7 @@ create table abc
 create table abc
 (
     id bigint unsigned not null auto_increment unique primary key
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 <?
         $this->assertEquals(trim(ob_get_clean()), $table->get_definition());
 
