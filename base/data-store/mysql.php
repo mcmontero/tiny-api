@@ -91,7 +91,9 @@ extends tiny_api_Base_Rdbms
 
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
+            throw new tiny_Api_Data_Store_Exception(
+                        "execution of this query:\n\n$query\n\nproduced this "
+                        . "error:\n\n" .  $this->mysql->error);
         }
 
         $this->bind($dss, $vals);
@@ -438,7 +440,12 @@ extends tiny_api_Base_Rdbms
 
     private function param_is_bindable($value)
     {
-        return !array_key_exists($value, array('current_timestamp' => true));
+        if ($value == 'current_timestamp')
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 ?>

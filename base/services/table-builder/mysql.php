@@ -677,7 +677,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
     final public function serial($name = 'id')
     {
-        $this->id($name, true, true)->pk();
+        $this->id($name, false, true)->pk();
         return $this;
     }
 
@@ -1154,14 +1154,15 @@ extends _tiny_api_Mysql_Column
             $terms[] = 'auto_increment';
         }
 
-        if ($this->unique === true)
+        if ($this->primary_key === false && $this->unique === true)
         {
             $terms[] = 'unique';
         }
 
-        if (!is_null($this->default))
+        $default_term = $this->get_default_term();
+        if (!empty($default_term))
         {
-            $terms[] = $this->get_default_term();
+            $terms[] = $default_term;
         }
 
         if ($this->primary_key === true)
@@ -1310,14 +1311,15 @@ extends _tiny_api_Mysql_Column
             $terms[] = 'not null';
         }
 
-        if ($this->unique === true)
+        if ($this->primary_key === false && $this->unique === true)
         {
             $terms[] = 'unique';
         }
 
-        if (!is_null($this->default))
+        $default_term = $this->get_default_term();
+        if (!empty($default_term))
         {
-            $terms[] = $this->get_default_term();
+            $terms[] = $default_term;
         }
 
         if ($this->primary_key === true)
@@ -1525,7 +1527,7 @@ extends _tiny_api_Mysql_Column
             $terms[] = 'not null';
         }
 
-        if ($this->unique === true)
+        if ($this->primary_key === false && $this->unique === true)
         {
             $terms[] = 'unique';
         }
@@ -1538,6 +1540,17 @@ extends _tiny_api_Mysql_Column
         if (!is_null($this->collation))
         {
             $terms[] = 'collate ' . $this->collation;
+        }
+
+        $default_term = $this->get_default_term();
+        if (!empty($default_term))
+        {
+            $terms[] = $default_term;
+        }
+
+        if ($this->primary_key === true)
+        {
+            $terms[] = 'primary key';
         }
 
         return implode(' ', $terms);
@@ -1623,7 +1636,8 @@ class _tiny_api_Mysql_Column
 
     function __construct($name)
     {
-        $this->name = $name;
+        $this->name        = $name;
+        $this->primary_key = false;
     }
 
     // +----------------+
@@ -1638,14 +1652,23 @@ class _tiny_api_Mysql_Column
 
     final public function get_default_term()
     {
-        $reserved = array(
-            'current_timestamp' => true,
-        );
+        if (!empty($this->default))
+        {
+            $reserved = array
+            (
+                'current_timestamp' => true,
+            );
 
-        return 'default '
-               . (!array_key_exists($this->default, $reserved) ?
-                    "'" . $this->default . "'" :
-                    $this->default);
+            return 'default '
+                   . (!array_key_exists($this->default, $reserved) ?
+                        "'" . $this->default . "'" :
+                        $this->default);
+        }
+        else
+        {
+            return empty($this->not_null) || $this->not_null === false ?
+                                'default null' : '';
+        }
     }
 
     final public function get_on_update_term()
