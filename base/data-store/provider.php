@@ -25,6 +25,7 @@
 // +------------------------------------------------------------+
 
 require_once 'base/data-store/memcache.php';
+require_once 'base/services/table-builder/reference.php';
 
 // +------------------------------------------------------------+
 // | PUBLIC FUNCTIONS                                           |

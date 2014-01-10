@@ -85,6 +85,14 @@ $__tiny_api_conf__ = array(
      */
     'postgresql connection data' => array(
         'local' => 'host=localhost port=5432 user=postgres password=abcd1234',
-    ),
+
+    /**
+     * The RDBMS builder can compile the reference tables created with
+     * tiny_api_Ref_Table into PHP definitions so that no database
+     * interactions are required to interact with them.  If this value is
+     * null, reference definitions will not be compiled.
+     */
+    'reference definition file' =>
+        null,
 );
 ?>
