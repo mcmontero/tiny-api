@@ -1,0 +1,85 @@
+#!/usr/bin/php
+<?php
+
+// +------------------------------------------------------------+
+// | INCLUDES                                                   |
+// +------------------------------------------------------------+
+
+require_once 'base/conf.php';
+require_once 'base/services/cli.php';
+require_once 'base/services/schema-differ/mysql.php';
+
+// +------------------------------------------------------------+
+// | INSTRUCTIONS                                               |
+// +------------------------------------------------------------+
+
+tiny_api_cli_main(
+    tiny_Api_Cli_Conf::make()
+        ->add_description('Computes the differences between two schemas and '
+                          . 'reports what DDL statements to execute to make '
+                          . 'the target a replica of the source.')
+        ->add_arg('source-connection-name',
+                  'The connection name configured in tiny-api-conf.php '
+                  . 'identifying the source database.',
+                  true)
+        ->add_arg('source-db-name',
+                  'The database name for the source.',
+                  true)
+        ->add_arg('target-connection-name',
+                  'The connection name configured in tiny-api-conf.php '
+                  . 'identifying the target database.',
+                  true)
+        ->add_arg('target-db-name',
+                  'The database name for the target.',
+                  true),
+    'main');
+
+// +------------------------------------------------------------+
+// | PUBLIC FUNCTIONS                                           |
+// +------------------------------------------------------------+
+
+function main(tiny_api_Cli $cli)
+{
+    global $__tiny_api_conf__;
+    $cli->header('Schema Differ');
+
+    $cli->notice('Diffing the following schemas:');
+    $cli->notice('source = '
+                 . $cli->get_arg('source-connection-name')
+                 . '::'
+                 . $cli->get_arg('source-db-name'),
+                 1);
+    $cli->notice('target = '
+                 . $cli->get_arg('target-connection-name')
+                 . '::'
+                 . $cli->get_arg('target-db-name'),
+                 1);
+
+    if (tiny_api_is_data_store_mysql())
+    {
+        _schema_differ_execute_for_mysql($cli);
+    }
+    else
+    {
+        throw new tiny_api_Schema_Differ_Exception(
+                    'the schema differ does not currently support "'
+                    . $__tiny_api_conf__[ 'data store' ]
+                    . '"');
+    }
+}
+
+// +------------------------------------------------------------+
+// | PRIVATE FUNCTIONS                                          |
+// +------------------------------------------------------------+
+
+function _schema_differ_execute_for_mysql(tiny_api_Cli $cli)
+{
+    tiny_api_Mysql_Schema_Differ::make(
+        $cli->get_arg('source-connection-name'),
+        $cli->get_arg('source-db-name'),
+        $cli->get_arg('target-connection-name'),
+        $cli->get_arg('target-db-name'))
+            ->set_cli($cli)
+            ->execute();
+}
+?>
