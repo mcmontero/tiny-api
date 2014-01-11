@@ -87,6 +87,13 @@ $__tiny_api_conf__ = array(
         'local' => 'host=localhost port=5432 user=postgres password=abcd1234',
 
     /**
+     * A list of schema names that the RDBMS builder should manage.  If the
+     * RDBMS builder is in use you must provide values here.
+     */
+    'rdbms builder schemas' => array(
+    ),
+
+    /**
      * The RDBMS builder can compile the reference tables created with
      * tiny_api_Ref_Table into PHP definitions so that no database
      * interactions are required to interact with them.  If this value is

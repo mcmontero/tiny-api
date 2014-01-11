@@ -39,6 +39,7 @@ require_once 'base/conf.php';
 class tiny_api_Rdbms_Builder_Manager
 {
     private $cli;
+    private $managed_schemas;
     private $modules;
     private $num_rdbms_objects;
     private $num_rdbms_tables;
@@ -56,6 +57,7 @@ class tiny_api_Rdbms_Builder_Manager
     function __construct(tiny_api_Cli $cli = null)
     {
         $this->cli                     = $cli;
+        $this->managed_schemas         = null;
         $this->modules                 = array();
         $this->num_rdbms_objects       = 0;
         $this->num_rdbms_tables        = 0;
@@ -107,6 +109,27 @@ class tiny_api_Rdbms_Builder_Manager
         // +------------------------------------------------------------+
         // | Step 3                                                     |
         // |                                                            |
+        // | Determine which schemas should be managed by the RDBMS     |
+        // | Builder.                                                   |
+        // +------------------------------------------------------------+
+
+        $this->determine_managed_schemas();
+
+        // +------------------------------------------------------------+
+        // | Step 4                                                     |
+        // |                                                            |
+        // | Execute any SQL files that are intended to be loaded       |
+        // | before the build.                                          |
+        // +------------------------------------------------------------+
+
+        if (!is_null($this->cli) && $this->cli->get_arg('--all'))
+        {
+            $this->execute_prebuild_scripts();
+        }
+
+        // +------------------------------------------------------------+
+        // | Step 5                                                     |
+        // |                                                            |
         // | Create an array containing data about all modules that     |
         // | exist in this API.                                         |
         // +------------------------------------------------------------+
@@ -114,7 +137,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->assemble_all_modules();
 
         // +------------------------------------------------------------+
-        // | Step 4                                                     |
+        // | Step 6                                                     |
         // |                                                            |
         // | Compile the list of modules that need to be built.         |
         // +------------------------------------------------------------+
@@ -141,7 +164,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         // +------------------------------------------------------------+
-        // | Step 5                                                     |
+        // | Step 7                                                     |
         // |                                                            |
         // | Determine if the build should continue.                    |
         // +------------------------------------------------------------+
@@ -153,7 +176,7 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         // +------------------------------------------------------------+
-        // | Step 6                                                     |
+        // | Step 8                                                     |
         // |                                                            |
         // | Drop all foreign key constraints for the tables that need  |
         // | to built so we can tear down objects without errors.       |
@@ -162,7 +185,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->drop_foreign_key_constraints();
 
         // +------------------------------------------------------------+
-        // | Step 7                                                     |
+        // | Step 9                                                     |
         // |                                                            |
         // | Drop objects for modules marked for rebuild.               |
         // +------------------------------------------------------------+
@@ -170,7 +193,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->drop_objects();
 
         // +------------------------------------------------------------+
-        // | Step 8                                                     |
+        // | Step 10                                                    |
         // |                                                            |
         // | Rebuild modules.                                           |
         // +------------------------------------------------------------+
@@ -178,7 +201,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->rebuild_modules();
 
         // +------------------------------------------------------------+
-        // | Step 9                                                     |
+        // | Step 11                                                    |
         // |                                                            |
         // | Recompile all DML.                                         |
         // +------------------------------------------------------------+
@@ -186,7 +209,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->recompile_dml();
 
         // +------------------------------------------------------------+
-        // | Step 10                                                    |
+        // | Step 12                                                    |
         // |                                                            |
         // | Add all foreign key constraints.                           |
         // +------------------------------------------------------------+
@@ -194,7 +217,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->add_foreign_key_constraints();
 
         // +------------------------------------------------------------+
-        // | Step 11                                                    |
+        // | Step 13                                                    |
         // |                                                            |
         // | Verify foreign key indexes.                                |
         // +------------------------------------------------------------+
@@ -202,7 +225,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->verify_foreign_key_indexes();
 
         // +------------------------------------------------------------+
-        // | Step 12                                                    |
+        // | Step 14                                                    |
         // |                                                            |
         // | Compile reference table data into PHP definitions.         |
         // +------------------------------------------------------------+
@@ -210,7 +233,7 @@ class tiny_api_Rdbms_Builder_Manager
         $this->compile_reference_definitions();
 
         // +------------------------------------------------------------+
-        // | Step 12                                                    |
+        // | Step 15                                                    |
         // |                                                            |
         // | Report interesting stats about the build.                  |
         // +------------------------------------------------------------+
@@ -586,7 +609,8 @@ class tiny_api_Rdbms_Builder_Manager
                 "select table_schema,
                         table_name
                    from tables
-                  where table_name like '%\_ref\_%'
+                  where table_schema in (" . $this->managed_schemas . ")
+                    and table_name like '%\_ref\_%'
                   order by table_name asc"
             );
 
@@ -683,6 +707,31 @@ class tiny_api_Rdbms_Builder_Manager
                     . '"');
     }
 
+    private function determine_managed_schemas()
+    {
+        global $__tiny_api_conf__;
+
+        $this->notice('Determining managed schemas...');
+
+        if (empty($__tiny_api_conf__[ 'rdbms builder schemas' ]))
+        {
+            throw new tiny_api_Rdbms_Builder_Exception(
+                        'no schemas have been configured for management; a '
+                        . 'value needs to be provided for "rdbms builder '
+                        . 'schemas" in tiny-api-conf.php');
+        }
+
+        $schemas = array();
+        foreach ($__tiny_api_conf__[ 'rdbms builder schemas' ] as $schema)
+        {
+            $schemas[] = "'$schema'";
+        }
+
+        $this->managed_schemas = implode(', ', $schemas);
+
+        $this->notice($this->managed_schemas, 1);
+    }
+
     private function drop_foreign_key_constraints()
     {
         $this->notice('Dropping relevant foreign key constraints...');
@@ -695,7 +744,8 @@ class tiny_api_Rdbms_Builder_Manager
                 'select constraint_schema,
                         table_name,
                         constraint_name
-                   from referential_constraints'
+                   from referential_constraints
+                  where constraint_schema in (' . $this->managed_schemas . ')'
             );
 
             foreach ($constraints as $constraint)
@@ -737,8 +787,7 @@ class tiny_api_Rdbms_Builder_Manager
                 'select table_schema,
                         table_name
                    from tables
-                  where table_schema != ?',
-                array('information_schema')
+                  where table_schema in (' . $this->managed_schemas . ')'
             );
 
             foreach ($tables as $table)
@@ -817,6 +866,76 @@ class tiny_api_Rdbms_Builder_Manager
         }
 
         $this->cli->error($message, $indent);
+    }
+
+    private function execute_prebuild_scripts()
+    {
+        $rdbms_prebuild = null;
+        $paths          = explode(':', ini_get('include_path'));
+        foreach ($paths as $path)
+        {
+            $command = "/usr/bin/find $path/ -type d -name \"rdbms_prebuild\"";
+            $output  = null;
+            exec($command, $output, $retval);
+
+            if ($retval)
+            {
+                throw new tiny_api_Rdbms_Builder_Exception(
+                            "failed to execute \"$command\": "
+                            . print_r($output, true));
+            }
+
+            if (array_key_exists(0, $output))
+            {
+                $rdbms_prebuild = $output[ 0 ];
+                break;
+            }
+        }
+
+        if (is_null($rdbms_prebuild))
+        {
+            return;
+        }
+
+        $this->notice('Executing pre-build files...');
+
+        $command = "/usr/bin/find $rdbms_prebuild/ -type f -name \"*.sql\"";
+        $output  = null;
+        exec($command, $output, $retval);
+
+        if ($retval)
+        {
+            throw new tiny_api_Rdbms_Builder_Exception(
+                        "failed to execute \"$command\": "
+                        . print_r($output, true));
+        }
+
+        if (empty($output))
+        {
+            $this->notice('no SQL files found', 1);
+            return;
+        }
+
+        sort($output);
+
+        foreach ($output as $file)
+        {
+            $this->notice($file, 1);
+
+            $command = $this->get_exec_sql_command()
+                       . ' -u root'
+                       . " < $file"
+                       . " 2>&1";
+            $output  = null;
+            exec($command, $output, $retval);
+
+            if ($retval)
+            {
+                throw new tiny_api_Rdbms_Builder_Exception(
+                            "failed to execute \"$command\": "
+                            . print_r($output, true));
+            }
+        }
     }
 
     private function execute_statement($statement, $db_name = null)
