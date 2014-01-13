@@ -30,7 +30,7 @@ require_once 'base/services/rdbms-builder/manager.php';
 // | TESTS                                                      |
 // +------------------------------------------------------------+
 
-class rdbm_Builder_Test_Manager
+class rdbms_Builder_Test_Manager
 extends PHPUnit_Framework_TestCase
 {
     function test_getting_module_sql()
