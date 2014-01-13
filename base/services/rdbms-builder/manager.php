@@ -870,8 +870,9 @@ class tiny_api_Rdbms_Builder_Manager
 
     private function execute_prebuild_scripts()
     {
-        $rdbms_prebuild = null;
-        $paths          = explode(':', ini_get('include_path'));
+        $this->notice('Finding and executing pre-build files...');
+
+        $paths = explode(':', ini_get('include_path'));
         foreach ($paths as $path)
         {
             $command = "/usr/bin/find $path/ -type d -name \"rdbms_prebuild\"";
@@ -888,52 +889,46 @@ class tiny_api_Rdbms_Builder_Manager
             if (array_key_exists(0, $output))
             {
                 $rdbms_prebuild = $output[ 0 ];
-                break;
-            }
-        }
+                $this->notice($rdbms_prebuild, 1);
 
-        if (is_null($rdbms_prebuild))
-        {
-            return;
-        }
+                $command = "/usr/bin/find $rdbms_prebuild/ "
+                           . "-type f -name \"*.sql\"";
+                $output  = null;
+                exec($command, $output, $retval);
 
-        $this->notice('Executing pre-build files...');
+                if ($retval)
+                {
+                    throw new tiny_api_Rdbms_Builder_Exception(
+                                "failed to execute \"$command\": "
+                                . print_r($output, true));
+                }
 
-        $command = "/usr/bin/find $rdbms_prebuild/ -type f -name \"*.sql\"";
-        $output  = null;
-        exec($command, $output, $retval);
+                if (empty($output))
+                {
+                    $this->notice('no SQL files found', 2);
+                    continue;
+                }
 
-        if ($retval)
-        {
-            throw new tiny_api_Rdbms_Builder_Exception(
-                        "failed to execute \"$command\": "
-                        . print_r($output, true));
-        }
+                sort($output);
 
-        if (empty($output))
-        {
-            $this->notice('no SQL files found', 1);
-            return;
-        }
+                foreach ($output as $file)
+                {
+                    $this->notice($file, 2);
 
-        sort($output);
+                    $command = $this->get_exec_sql_command()
+                               . ' -u root'
+                               . " < $file"
+                               . " 2>&1";
+                    $output  = null;
+                    exec($command, $output, $retval);
 
-        foreach ($output as $file)
-        {
-            $this->notice($file, 1);
-
-            $command = $this->get_exec_sql_command()
-                       . ' -u root'
-                       . " < $file"
-                       . " 2>&1";
-            $output  = null;
-            exec($command, $output, $retval);
-
-            if ($retval)
-            {
-                throw new tiny_api_Rdbms_Builder_Exception(
-                            "failed to execute \"$command\": "
-                            . print_r($output, true));
+                    if ($retval)
+                    {
+                        throw new tiny_api_Rdbms_Builder_Exception(
+                                    "failed to execute \"$command\": "
+                                    . print_r($output, true));
+                    }
+                }
             }
         }
     }
