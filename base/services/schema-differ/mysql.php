@@ -25,6 +25,7 @@
 // +------------------------------------------------------------+
 
 require_once 'base/data-store/mysql.php';
+require_once 'base/services/table-builder/mysql.php';
 
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
@@ -43,6 +44,8 @@ class tiny_api_Mysql_Schema_Differ
     private $target;
     private $source_db_name;
     private $target_db_name;
+    private $prefix_module_name_map;
+    private $write_upgrade_scripts;
     private $ref_tables_to_create;
     private $ref_tables_to_drop;
     private $tables_to_create;
@@ -64,6 +67,8 @@ class tiny_api_Mysql_Schema_Differ
         $this->target = new tiny_api_Data_Store_Mysql();
         $this->target->select_db($target_connection_name, 'information_schema');
         $this->target_db_name = $target_db_name;
+
+        $this->write_upgrade_scripts = true;
     }
 
     static function make($source_connection_name,
@@ -81,11 +86,21 @@ class tiny_api_Mysql_Schema_Differ
     // | Public Methods |
     // +----------------+
 
+    final public function dont_write_upgrade_scripts()
+    {
+        $this->write_upgrade_scripts = false;
+        return $this;
+    }
+
     final public function execute()
     {
+        $this->map_prefixes_to_module_name();
+
         $this->compute_ref_table_differences();
         $this->compute_table_differences();
         $this->compute_column_differences();
+
+        $this->write_upgrade_scripts();
 
         return $this;
     }
@@ -336,6 +351,99 @@ class tiny_api_Mysql_Schema_Differ
         return $results;
     }
 
+    private function get_column_terms($column_data)
+    {
+        $terms = array();
+
+        if ($column_data[ 'is_nullable' ] == 'NO')
+        {
+            $terms[] = '            not null';
+        }
+
+        if ($column_data[ 'extra' ] == 'auto_increment')
+        {
+            $terms[] = '            auto_increment';
+        }
+
+        if ($column_data[ 'column_key' ] == 'UNI')
+        {
+            $terms[] = '            unique';
+        }
+
+        if (!empty($column_data[ 'character_set_name' ]))
+        {
+            $terms[] = '            character set '
+                       . $column_data[ 'character_set_name' ];
+        }
+
+        if (!empty($column_data[ 'collation_name' ]))
+        {
+            $terms[] = '            collate '
+                       . $column_data[ 'collation_name' ];
+        }
+
+        if (!empty($column_data[ 'column_default' ]))
+        {
+            $terms[] = '    default '
+                       . (in_array($column_data[ 'column_default' ],
+                                   array('current_timestamp')) ?
+                            $column_data[ 'column_default' ] :
+                            "'" . $column_data[ 'column_default' ] . "'");
+        }
+
+        return $terms;
+    }
+
+    private function map_prefixes_to_module_name()
+    {
+        $this->notice('Mapping module prefixes to names...');
+
+        $this->prefix_module_name_map = array();
+
+        $paths = explode(':', ini_get('include_path'));
+        foreach ($paths as $path)
+        {
+            $command = "/usr/bin/find $path/ -type f -name build.php";
+            $output  = null;
+            exec($command, $output, $retval);
+
+            if ($retval)
+            {
+                throw new tiny_api_Schema_Differ_Exception(
+                            "failed to execute \"$command\": "
+                            . print_r($output, true));
+            }
+
+            foreach ($output as $build_file)
+            {
+                if (!preg_match('#^(.*?)/sql/ddl/build.php#',
+                                preg_replace("#^$path/?#", '', $build_file),
+                                $matches))
+                {
+                    throw new tiny_api_Schema_Differ_Exception(
+                                "could not get module name from build file "
+                                . "include path \"$build_file\"");
+                }
+                $module_name = $matches[ 1 ];
+
+                $contents = file_get_contents($build_file);
+                if ($contents &&
+                    preg_match('/function (.*)_build\\s?\(/msi',
+                               $contents, $matches))
+                {
+                    $prefix = $matches[ 1 ];
+                }
+
+                if (!empty($module_name) && !empty($prefix))
+                {
+                    $this->notice("$prefix => $module_name", 1);
+
+                    $this->prefix_module_name_map[ $prefix ] = $module_name;
+                }
+            }
+        }
+    }
+
     private function notice($message, $indent = null)
     {
         if (is_null($this->cli))
@@ -374,6 +482,131 @@ class tiny_api_Mysql_Schema_Differ
         }
 
         $this->cli->error($message, $indent);
+    }
+
+    private function write_add_modify_columns_sql()
+    {
+        $file = '20-columns.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->columns_to_create as $column_name)
+        {
+            list($table_name, $column_name) = explode('.', $column_name);
+
+            $column = $this->source->query
+            (
+                __METHOD__,
+                'select table_name,
+                        column_name,
+                        column_default,
+                        is_nullable,
+                        character_set_name,
+                        collation_name,
+                        column_type,
+                        column_key,
+                        extra
+                   from information_schema.columns
+                  where table_name = ?
+                    and column_name = ?',
+                array($table_name, $column_name)
+            );
+
+            ob_start();
+?>
+alter table <?= $column[ 0 ][ 'table_name' ] . "\n" ?>
+        add <?= $column[ 0 ][ 'column_name' ] . "\n" ?>
+            <?= $column[ 0 ][ 'column_type' ] ?>
+<?
+            $contents .= ob_get_clean()
+                         . "\n"
+                         . implode("\n", $this->get_column_terms($column[ 0 ]))
+                         . ";\n\n";
+        }
+
+        foreach ($this->columns_to_modify as $column)
+        {
+            ob_start();
+?>
+alter table <?= $column[ 'table_name' ] . "\n" ?>
+     modify <?= $column[ 'column_name' ] . "\n" ?>
+            <?= $column[ 'column_type' ] ?>
+<?
+            $contents .= ob_get_clean()
+                         . "\n"
+                         . implode("\n", $this->get_column_terms($column))
+                         . ";\n\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
+    private function write_add_ref_tables_sql()
+    {
+        $file = '10-ref_tables.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->ref_tables_to_create as $table_name)
+        {
+            $records = $this->source->query
+            (
+                __METHOD__,
+                "select id,
+                        value,
+                        display_order
+                   from " . $this->source_db_name . ".$table_name
+                  order by id asc"
+            );
+
+            $ref_table = tiny_api_Ref_Table::make($this->source_db_name,
+                                                  $table_name);
+            foreach ($records as $record)
+            {
+                $ref_table->add($record[ 'id' ],
+                                $record[ 'value' ],
+                                $record[ 'display_order' ]);
+            }
+
+            $contents .= $ref_table->get_definition() . "\n\n";
+            foreach ($ref_table->get_insert_statements() as $statement)
+            {
+                $contents .= "$statement\n\n";
+            }
+        }
+
+        file_put_contents($file, $contents);
+    }
+
+    private function write_drop_ref_tables_sql()
+    {
+        $file = '80-ref_tables.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->ref_tables_to_drop as $table_name)
+        {
+            $contents .= "drop table if exists $table_name;\n\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
+    private function write_upgrade_scripts()
+    {
+        if (!$this->write_upgrade_scripts)
+        {
+            return;
+        }
+
+        $this->notice('Writing upgrade scripts into current directory...');
+
+        $this->write_add_ref_tables_sql();
+        $this->write_add_modify_columns_sql();
+        $this->write_drop_ref_tables_sql();
     }
 }
 ?>

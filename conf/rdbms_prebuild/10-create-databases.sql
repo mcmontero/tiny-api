@@ -26,6 +26,7 @@
 +------------------------------------------------------------+
 */
 
+drop database if exists schema_differ_source;
 create database if not exists schema_differ_source;
 
      grant all privileges
@@ -33,61 +34,18 @@ create database if not exists schema_differ_source;
         to ''@'localhost'
 identified by '';
 
-drop table if exists schema_differ_source.diff_table;
-create table schema_differ_source.diff_table
-(
-    col_a integer unsigned not null primary key,
-    col_b varchar(30) not null default 'abc',
-    col_c bigint(10) unsigned not null unique
-);
-
-drop table if exists schema_differ_source.add_table;
-create table schema_differ_source.add_table
-(
-    col_c integer not null primary key
-);
-
-drop table if exists schema_differ_source.add_ref_table;
-create table schema_differ_source.add_ref_table
-(
-    id integer unsigned not null auto_increment primary key,
-    value varchar(32) not null,
-    display_order integer not null
-);
-
 /*
 +------------------------------------------------------------+
 | TARGET SCHEMA                                              |
 +------------------------------------------------------------+
 */
 
+drop database if exists schema_differ_target;
 create database if not exists schema_differ_target;
 
      grant all privileges
         on schema_differ_target.*
         to ''@'localhost'
 identified by '';
-
-drop table if exists schema_differ_target.diff_table;
-create table schema_differ_target.diff_table
-(
-    col_a integer,
-    col_b varchar(10),
-    col_z bigint
-);
-
-drop table if exists schema_differ_target.remove_table;
-create table schema_differ_target.remove_table
-(
-    col_d integer not null primary key
-);
-
-drop table if exists schema_differ_target.remove_ref_table;
-create table schema_differ_target.remove_ref_table
-(
-    id integer unsigned not null auto_increment primary key,
-    value varchar(32) not null,
-    display_order integer not null
-);
 
 flush privileges;

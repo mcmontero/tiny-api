@@ -52,6 +52,7 @@ extends PHPUnit_Framework_TestCase
                             'schema_differ_source',
                             'schema differ tests',
                             'schema_differ_target')
+                                ->dont_write_upgrade_scripts()
                                 ->execute();
     }
 
