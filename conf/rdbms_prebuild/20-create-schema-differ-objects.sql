@@ -32,13 +32,15 @@ create table schema_differ_source.diff_table
     col_a integer unsigned not null primary key,
     col_b varchar(30) not null collate utf8_unicode_ci default 'abc',
     col_c bigint(10) unsigned not null unique
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_source.add_table;
 create table schema_differ_source.add_table
 (
-    col_c integer not null primary key
-);
+    col_c integer not null,
+    col_d integer not null,
+    primary key (col_c, col_d)
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_source.add_ref_table;
 create table schema_differ_source.add_ref_table
@@ -46,7 +48,7 @@ create table schema_differ_source.add_ref_table
     id integer unsigned not null auto_increment primary key,
     value varchar(32) not null,
     display_order integer not null
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 insert into schema_differ_source.add_ref_table
 (
@@ -86,13 +88,13 @@ create table schema_differ_target.diff_table
     col_a integer,
     col_b varchar(10),
     col_z bigint
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_target.remove_table;
 create table schema_differ_target.remove_table
 (
     col_d integer not null primary key
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_target.remove_ref_table;
 create table schema_differ_target.remove_ref_table
@@ -100,4 +102,4 @@ create table schema_differ_target.remove_ref_table
     id integer unsigned not null auto_increment primary key,
     value varchar(32) not null,
     display_order integer not null
-);
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;

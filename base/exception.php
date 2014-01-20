@@ -128,4 +128,20 @@ class tiny_api_Reference_Exception extends tiny_api_Exception {}
 //
 
 class tiny_api_Schema_Differ_Exception extends tiny_api_Exception {}
+
+//
+// +----------------------------+
+// | tiny_api_Context_Exception |
+// +----------------------------+
+//
+
+class tiny_api_Context_Exception extends tiny_api_Exception {}
+
+//
+// +--------------------------------+
+// | tiny_api_Data_Mapper_Exception |
+// +--------------------------------+
+//
+
+class tiny_api_Data_Mapper_Exception extends tiny_api_Exception {}
 ?>

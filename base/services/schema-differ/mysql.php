@@ -357,34 +357,34 @@ class tiny_api_Mysql_Schema_Differ
 
         if ($column_data[ 'is_nullable' ] == 'NO')
         {
-            $terms[] = '            not null';
+            $terms[] = 'not null';
         }
 
         if ($column_data[ 'extra' ] == 'auto_increment')
         {
-            $terms[] = '            auto_increment';
+            $terms[] = 'auto_increment';
         }
 
         if ($column_data[ 'column_key' ] == 'UNI')
         {
-            $terms[] = '            unique';
+            $terms[] = 'unique';
         }
 
         if (!empty($column_data[ 'character_set_name' ]))
         {
-            $terms[] = '            character set '
+            $terms[] = 'character set '
                        . $column_data[ 'character_set_name' ];
         }
 
         if (!empty($column_data[ 'collation_name' ]))
         {
-            $terms[] = '            collate '
+            $terms[] = 'collate '
                        . $column_data[ 'collation_name' ];
         }
 
         if (!empty($column_data[ 'column_default' ]))
         {
-            $terms[] = '    default '
+            $terms[] = 'default '
                        . (in_array($column_data[ 'column_default' ],
                                    array('current_timestamp')) ?
                             $column_data[ 'column_default' ] :
@@ -519,10 +519,14 @@ alter table <?= $column[ 0 ][ 'table_name' ] . "\n" ?>
         add <?= $column[ 0 ][ 'column_name' ] . "\n" ?>
             <?= $column[ 0 ][ 'column_type' ] ?>
 <?
-            $contents .= ob_get_clean()
-                         . "\n"
-                         . implode("\n", $this->get_column_terms($column[ 0 ]))
-                         . ";\n\n";
+            $contents .= ob_get_clean() . "\n";
+
+            $terms = $this->get_column_terms($column[ 0 ]);
+            foreach ($terms as $index => $term)
+            {
+                $terms[ $index ] = "            $term";
+            }
+            $contents .= implode("\n", $terms) . ";\n\n";
         }
 
         foreach ($this->columns_to_modify as $column)
@@ -533,10 +537,14 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
      modify <?= $column[ 'column_name' ] . "\n" ?>
             <?= $column[ 'column_type' ] ?>
 <?
-            $contents .= ob_get_clean()
-                         . "\n"
-                         . implode("\n", $this->get_column_terms($column))
-                         . ";\n\n";
+            $contents .= ob_get_clean() . "\n";
+
+            $terms = $this->get_column_terms($column);
+            foreach ($terms as $index => $term)
+            {
+                $terms[ $index ] = "            $term";
+            }
+            $contents .= implode("\n", $terms) . ";\n\n";
         }
 
         file_put_contents($file, $contents);
@@ -580,6 +588,114 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
         file_put_contents($file, $contents);
     }
 
+    private function write_add_tables_sql()
+    {
+        $file = '20-tables.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->tables_to_create as $table_name)
+        {
+            $table_terms = array();
+
+            $table_definition = $this->source->query
+            (
+                __METHOD__,
+                'select engine,
+                        table_collation
+                   from tables
+                  where table_name = ?',
+                array($table_name)
+            );
+
+            if (array_key_exists(0, $table_definition))
+            {
+                $table_terms[] =
+                    'engine = '
+                    . strtolower($table_definition[ 0 ][ 'engine' ]);
+                $table_terms[] =
+                    'default charset = utf8';
+
+                if (!empty($table_definition[ 0 ][ 'table_collation' ]))
+                {
+                    $table_terms[] =
+                        'collate = '
+                        . $table_definition[ 0 ][ 'table_collation' ];
+                }
+            }
+
+            $columns = array();
+
+            $data = $this->source->query
+            (
+                __METHOD__,
+                'select table_name,
+                        column_name,
+                        column_default,
+                        is_nullable,
+                        character_set_name,
+                        collation_name,
+                        column_type,
+                        column_key,
+                        extra
+                   from information_schema.columns
+                  where table_name = ?
+                  order by ordinal_position asc',
+                array($table_name)
+            );
+
+            foreach ($data as $column)
+            {
+                $terms = $this->get_column_terms($column);
+
+                $columns[] = '    '
+                             . $column[ 'column_name' ]
+                             . ' '
+                             . $column[ 'column_type' ]
+                             . (!empty($terms) ?
+                                ' ' . implode(' ', $terms) : '');
+            }
+
+            $data = $this->source->query
+            (
+                __METHOD__,
+                "show keys
+                      from " . $this->source_db_name . ".$table_name
+                where key_name = 'PRIMARY'"
+            );
+
+            $primary_key = '';
+
+            $pk_cols = array();
+            foreach ($data as $column)
+            {
+                $pk_cols[] = $column[ 'Column_name' ];
+            }
+
+            if (!empty($pk_cols))
+            {
+                $primary_key =
+                    "alter table $table_name\n"
+                    . "        add constraint $table_name" . "_pk\n"
+                    . '    primary key (' . implode(', ', $pk_cols) . ');';
+            }
+
+            ob_start();
+?>
+create table <?= $table_name . "\n" ?>
+(
+<?= implode(",\n", $columns) . "\n" ?>
+)<?= !empty($table_terms) ? ' ' . implode(' ', $table_terms) : '' ?>;
+
+<?= !empty($primary_key) ? "$primary_key\n" : '' ?>
+<?
+            $contents .= ob_get_clean();
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_drop_ref_tables_sql()
     {
         $file = '80-ref_tables.sql';
@@ -605,6 +721,7 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
         $this->notice('Writing upgrade scripts into current directory...');
 
         $this->write_add_ref_tables_sql();
+        $this->write_add_tables_sql();
         $this->write_add_modify_columns_sql();
         $this->write_drop_ref_tables_sql();
     }
