@@ -65,7 +65,7 @@ class tiny_api_Data_Mapper
     {
         $elem = _tiny_api_Data_Mapper_Element::make(
                     $name, _tiny_api_Data_Mapper_Element::TYPE_DATETIME);
-        $this->process_attributes($name, $required);
+        $this->process_attributes($elem, $required);
 
         $this->elems[ $name ] = $elem;
 
