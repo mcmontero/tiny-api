@@ -54,6 +54,8 @@ class tiny_api_Mysql_Schema_Differ
     private $columns_to_create;
     private $columns_to_drop;
     private $columns_to_modify;
+    private $foreign_keys_to_create;
+    private $foreign_keys_to_drop;
 
     function __construct($source_connection_name,
                          $source_db_name,
@@ -486,7 +488,7 @@ class tiny_api_Mysql_Schema_Differ
 
     private function write_add_modify_columns_sql()
     {
-        $file = '20-columns.sql';
+        $file = '30-columns.sql';
 
         $this->notice($file, 1);
 
@@ -545,6 +547,18 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
                 $terms[ $index ] = "            $term";
             }
             $contents .= implode("\n", $terms) . ";\n\n";
+        }
+
+        foreach ($this->columns_to_drop as $column)
+        {
+            list($table_name, $column_name) = explode('.', $column);
+
+            ob_start();
+?>
+alter table <?= $table_name . "\n" ?>
+       drop <?= $column_name ?>;
+<?
+            $contents .= ob_get_clean() . "\n\n";
         }
 
         file_put_contents($file, $contents);
@@ -660,9 +674,14 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
             $data = $this->source->query
             (
                 __METHOD__,
-                "show keys
-                      from " . $this->source_db_name . ".$table_name
-                where key_name = 'PRIMARY'"
+                "select column_name
+                   from key_column_usage
+                  where table_schema = ?
+                    and table_name = ?
+                    and constraint_name = 'PRIMARY'
+                  order by ordinal_position asc",
+                array($this->source_db_name,
+                      $table_name)
             );
 
             $primary_key = '';
@@ -670,7 +689,7 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
             $pk_cols = array();
             foreach ($data as $column)
             {
-                $pk_cols[] = $column[ 'Column_name' ];
+                $pk_cols[] = $column[ 'column_name' ];
             }
 
             if (!empty($pk_cols))
@@ -711,6 +730,21 @@ create table <?= $table_name . "\n" ?>
         file_put_contents($file, $contents);
     }
 
+    private function write_drop_tables_sql()
+    {
+        $file = '70-tables.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->tables_to_drop as $table_name)
+        {
+            $contents .= "drop table if exists $table_name;\n\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_upgrade_scripts()
     {
         if (!$this->write_upgrade_scripts)
@@ -723,6 +757,7 @@ create table <?= $table_name . "\n" ?>
         $this->write_add_ref_tables_sql();
         $this->write_add_tables_sql();
         $this->write_add_modify_columns_sql();
+        $this->write_drop_tables_sql();
         $this->write_drop_ref_tables_sql();
     }
 }
