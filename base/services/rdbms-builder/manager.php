@@ -657,14 +657,17 @@ class tiny_api_Rdbms_Builder_Manager
                 $values = array();
                 foreach ($data as $d)
                 {
-                    printf("define(%-60s %5s);\n",
-                           "'"
-                          . strtoupper(
+                    printf(
+                        "define(%-60s %5s);\n",
+                        "'"
+                        . preg_replace(
+                            '/[_]+/', '_',
+                            strtoupper(
                                 preg_replace(
                                     '/_ref_/', '_',
                                     preg_replace(
                                         '/[^A-Za-z0-9_]/', '_',
-                                        $table_name . '_' . $d[ 'value' ])))
+                                        $table_name . '_' . $d[ 'value' ]))))
                           . "',",
                           $d[ 'id' ]);
 
