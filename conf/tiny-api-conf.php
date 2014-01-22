@@ -32,8 +32,8 @@ require_once 'base/response.php';
 // | INSTRUCTIONS                                               |
 // +------------------------------------------------------------+
 
-$__tiny_api_conf__ = array(
-
+$__tiny_api_conf__ = array
+(
     /**
      * Defines the underlying data store into which all entities are stored.
      *
@@ -75,7 +75,8 @@ $__tiny_api_conf__ = array(
      * used.  This includes the ability to read from a slave but write to a
      * master or distribute reads over sharded slaves.
      */
-    'mysql connection data' => array(
+    'mysql connection data' => array
+    (
         'local' => array('', '', ''),
     ),
 
@@ -83,14 +84,17 @@ $__tiny_api_conf__ = array(
      * The value provided here should match exactly what would normally
      * be passed to the PHP function pg_pconnect().
      */
-    'postgresql connection data' => array(
+    'postgresql connection data' => array
+    (
         'local' => 'host=localhost port=5432 user=postgres password=abcd1234',
+    ),
 
     /**
      * A list of schema names that the RDBMS builder should manage.  If the
      * RDBMS builder is in use you must provide values here.
      */
-    'rdbms builder schemas' => array(
+    'rdbms builder schemas' => array
+    (
     ),
 
     /**
