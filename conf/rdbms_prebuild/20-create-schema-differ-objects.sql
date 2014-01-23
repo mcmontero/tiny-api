@@ -26,31 +26,44 @@
 +------------------------------------------------------------+
 */
 
-drop table if exists schema_differ_source.diff_table;
-create table schema_differ_source.diff_table
+drop table if exists schema_differ_source.schema_differ_ref_add;
+create table schema_differ_source.schema_differ_ref_add
 (
-    col_a integer unsigned not null primary key,
+    id int unsigned not null auto_increment primary key,
+    value varchar(32) not null,
+    display_order int not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+drop table if exists schema_differ_source.schema_differ_add;
+create table schema_differ_source.schema_differ_add
+(
+    col_a int unsigned not null primary key,
     col_b varchar(30) not null collate utf8_unicode_ci default 'abc',
     col_c bigint(10) unsigned not null unique
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
-drop table if exists schema_differ_source.add_table;
-create table schema_differ_source.add_table
+drop table if exists schema_differ_source.schema_differ_cols;
+create table schema_differ_source.schema_differ_cols
 (
-    col_c integer not null,
-    col_d integer not null,
-    primary key (col_c, col_d)
+    col_a int unsigned not null unique,
+    col_b varchar(100) not null
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
-drop table if exists schema_differ_source.add_ref_table;
-create table schema_differ_source.add_ref_table
+drop table if exists schema_differ_source.schema_differ_fks;
+create table schema_differ_source.schema_differ_fks
 (
-    id integer unsigned not null auto_increment primary key,
-    value varchar(32) not null,
-    display_order integer not null
+    id int unsigned not null,
+    col_a int unsigned not null,
+    constraint schema_differ_fks_0_fk
+       foreign key (id)
+    references schema_differ_source.schema_differ_ref_add (id),
+    constraint schema_differ_fks_1_fk
+       foreign key (col_a)
+    references schema_differ_source.schema_differ_add (col_a)
+            on delete cascade
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
-insert into schema_differ_source.add_ref_table
+insert into schema_differ_source.schema_differ_ref_add
 (
     id,
     value,
@@ -63,7 +76,7 @@ values
     1
 );
 
-insert into schema_differ_source.add_ref_table
+insert into schema_differ_source.schema_differ_ref_add
 (
     id,
     value,
@@ -72,8 +85,8 @@ insert into schema_differ_source.add_ref_table
 values
 (
     2,
-    'abc',
-   2
+    'def',
+    2
 );
 
 /*
@@ -82,24 +95,39 @@ values
 +------------------------------------------------------------+
 */
 
-drop table if exists schema_differ_target.diff_table;
-create table schema_differ_target.diff_table
+drop table if exists schema_differ_target.schema_differ_ref_drop;
+create table schema_differ_target.schema_differ_ref_drop
 (
-    col_a integer,
-    col_b varchar(10),
-    col_z bigint
-) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
-
-drop table if exists schema_differ_target.remove_table;
-create table schema_differ_target.remove_table
-(
-    col_d integer not null primary key
-) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
-
-drop table if exists schema_differ_target.remove_ref_table;
-create table schema_differ_target.remove_ref_table
-(
-    id integer unsigned not null auto_increment primary key,
+    id int unsigned not null auto_increment primary key,
     value varchar(32) not null,
-    display_order integer not null
+    display_order int not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+drop table if exists schema_differ_target.schema_differ_drop;
+create table schema_differ_target.schema_differ_drop
+(
+    col_a int unsigned not null primary key,
+    col_b varchar(30) not null collate utf8_unicode_ci default 'abc',
+    col_c bigint(10) unsigned not null unique
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+drop table if exists schema_differ_target.schema_differ_cols;
+create table schema_differ_target.schema_differ_cols
+(
+    col_a int unsigned not null unique,
+    col_b varchar(50),
+    col_z int
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+drop table if exists schema_differ_target.schema_differ_fks;
+create table schema_differ_target.schema_differ_fks
+(
+    id int unsigned not null,
+    col_a int unsigned not null,
+    constraint schema_differ_fks_100_fk
+       foreign key (id)
+    references schema_differ_target.schema_differ_drop (col_a),
+    constraint schema_differ_fks_1_fk
+       foreign key (col_a)
+    references schema_differ_target.schema_differ_cols (col_a)
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;

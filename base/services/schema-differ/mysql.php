@@ -56,6 +56,7 @@ class tiny_api_Mysql_Schema_Differ
     private $columns_to_modify;
     private $foreign_keys_to_create;
     private $foreign_keys_to_drop;
+    private $foreign_keys_to_modify;
 
     function __construct($source_connection_name,
                          $source_db_name,
@@ -101,6 +102,7 @@ class tiny_api_Mysql_Schema_Differ
         $this->compute_ref_table_differences();
         $this->compute_table_differences();
         $this->compute_column_differences();
+        $this->compute_foreign_key_differences();
 
         $this->write_upgrade_scripts();
 
@@ -250,6 +252,96 @@ class tiny_api_Mysql_Schema_Differ
         }
     }
 
+    private function compute_foreign_key_differences()
+    {
+        $this->notice('Computing foreign key differences...');
+
+        $query = "select k.table_name,
+                         k.column_name,
+                         k.constraint_name,
+                         k.ordinal_position,
+                         k.referenced_table_name,
+                         k.referenced_column_name,
+                         c.delete_rule
+                    from key_column_usage k
+                    left outer join referential_constraints c
+                      on c.constraint_schema = k.constraint_schema
+                     and c.constraint_name = k.constraint_name
+                   where k.constraint_schema = ?
+                     and k.constraint_name like '%\_fk'
+                     and k.table_name not in ("
+                         . $this->table_create_drop_list
+                         . ")";
+        $source_fks =
+            $this->process_fks(
+                $this->query_source(
+                    __METHOD__,
+                    $query,
+                    array($this->source_db_name)));
+        $target_fks =
+            $this->process_fks(
+                $this->query_target(
+                    __METHOD__,
+                    $query,
+                    array($this->target_db_name)));
+
+        $source_fk_names = array_keys($source_fks);
+        $target_fk_names = array_keys($target_fks);
+
+        $foreign_keys_to_create =
+            array_diff($source_fk_names, $target_fk_names);
+        $foreign_keys_to_drop =
+            array_diff($target_fk_names, $source_fk_names);
+
+        $this->foreign_keys_to_create = array();
+        foreach ($foreign_keys_to_create as $fk_name)
+        {
+            $this->notice("(+) $fk_name", 1);
+
+            $this->foreign_keys_to_create[] = $source_fks[ $fk_name ];
+        }
+
+        $this->foreign_keys_to_drop = array();
+        foreach ($foreign_keys_to_drop as $fk_name)
+        {
+            $this->notice("(-) $fk_name", 1);
+
+            $this->foreign_keys_to_drop[] = $target_fks[ $fk_name ];
+        }
+
+        $this->foreign_keys_to_modify = array();
+        foreach ($source_fks as $constraint_name => $fk)
+        {
+            if (array_key_exists($constraint_name, $target_fks) &&
+                !in_array($constraint_name, $this->foreign_keys_to_create) &&
+                !in_array($constraint_name, $this->foreign_keys_to_drop))
+            {
+                if ($source_fks[ $constraint_name ][ 'table_name' ]         !=
+                    $target_fks[ $constraint_name ][ 'table_name' ]         ||
+                    $source_fks[ $constraint_name ][ 'ref_table_name' ]     !=
+                    $target_fks[ $constraint_name ][ 'ref_table_name' ]     ||
+                    $source_fks[ $constraint_name ][ 'delete_rule' ]        !=
+                    $target_fks[ $constraint_name ][ 'delete_rule' ]        ||
+                    implode(
+                        ',', $source_fks[ $constraint_name ][ 'cols' ])     !=
+                    implode(
+                        ',', $target_fks[ $constraint_name ][ 'cols' ])     ||
+                    implode(
+                        ',', $source_fks[ $constraint_name ][ 'ref_cols' ]) !=
+                    implode(
+                        ',', $target_fks[ $constraint_name ][ 'ref_cols' ]))
+                {
+                    $this->notice("(=) $constraint_name", 1);
+
+                    $this->foreign_keys_to_drop[] =
+                        $source_fks[ $constraint_name ];
+                    $this->foreign_keys_to_add[] =
+                        $source_fks[ $constraint_name ];
+                }
+            }
+        }
+    }
+
     private function compute_ref_table_differences()
     {
         $this->notice('Computing reference table differences...');
@@ -267,7 +359,7 @@ class tiny_api_Mysql_Schema_Differ
                     array($this->source_db_name)));
         $target_tables =
             $this->flatten_tables(
-                $this->query_source(
+                $this->query_target(
                     __METHOD__,
                     $query,
                     array($this->target_db_name)));
@@ -456,6 +548,53 @@ class tiny_api_Mysql_Schema_Differ
         $this->cli->notice($message, $indent);
     }
 
+    private function process_fks($data)
+    {
+        $fks = array();
+        foreach ($data as $fk)
+        {
+            if (!array_key_exists($fk[ 'constraint_name' ], $fks))
+            {
+                $fks[ $fk[ 'constraint_name' ] ] = array
+                (
+                    'table_name'     => $fk[ 'table_name' ],
+                    'ref_table_name' => $fk[ 'referenced_table_name' ],
+                    'cols'           => array
+                    (
+                        $fk[ 'ordinal_position' ] =>
+                            $fk[ 'column_name' ]
+                    ),
+                    'ref_cols'       => array
+                    (
+                        $fk[ 'ordinal_position' ] =>
+                            $fk[ 'referenced_column_name' ]
+                    ),
+                    'delete_rule'    => $fk[ 'delete_rule' ]
+                );
+            }
+            else
+            {
+                $fks[ $fk[ 'constraint_name' ] ]
+                    [ 'cols' ]
+                    [ $fk[ 'ordinal_position' ] ] =
+                        $fk[ 'column_name' ];
+
+                $fks[ $fk[ 'constraint_name' ] ]
+                    [ 'ref_cols' ]
+                    [ $fk[ 'ordinal_position' ] ] =
+                        $fk[ 'referenced_column_name' ];
+            }
+        }
+
+        foreach ($fks as $constraint_name => $fk)
+        {
+            ksort($fks[ $constraint_name ][ 'cols' ]);
+            ksort($fks[ $constraint_name ][ 'ref_cols' ]);
+        }
+
+        return $fks;
+    }
+
     private function query_source($caller, $query, array $binds)
     {
         return $this->source->query($caller, $query, $binds);
@@ -573,6 +712,14 @@ alter table <?= $table_name . "\n" ?>
         $contents = '';
         foreach ($this->ref_tables_to_create as $table_name)
         {
+            $record = $this->source->query
+            (
+                __METHOD__,
+                "show create table " . $this->source_db_name . ".$table_name"
+            );
+
+            $contents .= $record[ 0 ][ 'Create Table' ] . ";\n\n";
+
             $records = $this->source->query
             (
                 __METHOD__,
@@ -583,23 +730,28 @@ alter table <?= $table_name . "\n" ?>
                   order by id asc"
             );
 
-            $ref_table = tiny_api_Ref_Table::make($this->source_db_name,
-                                                  $table_name);
             foreach ($records as $record)
             {
-                $ref_table->add($record[ 'id' ],
-                                $record[ 'value' ],
-                                $record[ 'display_order' ]);
-            }
-
-            $contents .= $ref_table->get_definition() . "\n\n";
-            foreach ($ref_table->get_insert_statements() as $statement)
-            {
-                $contents .= "$statement\n\n";
+                ob_start();
+?>
+insert into <?= $table_name . "\n" ?>
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    '<?= $record[ 'id' ] ?>',
+    '<?= $record[ 'value' ] ?>',
+    '<?= $record[ 'display_order' ] ?>'
+);
+<?
+                $contents .= ob_get_clean() . "\n";
             }
         }
 
-        file_put_contents($file, $contents);
+        file_put_contents($file, $contents . "\n");
     }
 
     private function write_add_tables_sql()
@@ -611,105 +763,13 @@ alter table <?= $table_name . "\n" ?>
         $contents = '';
         foreach ($this->tables_to_create as $table_name)
         {
-            $table_terms = array();
-
-            $table_definition = $this->source->query
+            $record = $this->source->query
             (
                 __METHOD__,
-                'select engine,
-                        table_collation
-                   from tables
-                  where table_name = ?',
-                array($table_name)
+                "show create table " . $this->source_db_name . ".$table_name"
             );
 
-            if (array_key_exists(0, $table_definition))
-            {
-                $table_terms[] =
-                    'engine = '
-                    . strtolower($table_definition[ 0 ][ 'engine' ]);
-                $table_terms[] =
-                    'default charset = utf8';
-
-                if (!empty($table_definition[ 0 ][ 'table_collation' ]))
-                {
-                    $table_terms[] =
-                        'collate = '
-                        . $table_definition[ 0 ][ 'table_collation' ];
-                }
-            }
-
-            $columns = array();
-
-            $data = $this->source->query
-            (
-                __METHOD__,
-                'select table_name,
-                        column_name,
-                        column_default,
-                        is_nullable,
-                        character_set_name,
-                        collation_name,
-                        column_type,
-                        column_key,
-                        extra
-                   from information_schema.columns
-                  where table_name = ?
-                  order by ordinal_position asc',
-                array($table_name)
-            );
-
-            foreach ($data as $column)
-            {
-                $terms = $this->get_column_terms($column);
-
-                $columns[] = '    '
-                             . $column[ 'column_name' ]
-                             . ' '
-                             . $column[ 'column_type' ]
-                             . (!empty($terms) ?
-                                ' ' . implode(' ', $terms) : '');
-            }
-
-            $data = $this->source->query
-            (
-                __METHOD__,
-                "select column_name
-                   from key_column_usage
-                  where table_schema = ?
-                    and table_name = ?
-                    and constraint_name = 'PRIMARY'
-                  order by ordinal_position asc",
-                array($this->source_db_name,
-                      $table_name)
-            );
-
-            $primary_key = '';
-
-            $pk_cols = array();
-            foreach ($data as $column)
-            {
-                $pk_cols[] = $column[ 'column_name' ];
-            }
-
-            if (!empty($pk_cols))
-            {
-                $primary_key =
-                    "alter table $table_name\n"
-                    . "        add constraint $table_name" . "_pk\n"
-                    . '    primary key (' . implode(', ', $pk_cols) . ');';
-            }
-
-            ob_start();
-?>
-create table <?= $table_name . "\n" ?>
-(
-<?= implode(",\n", $columns) . "\n" ?>
-)<?= !empty($table_terms) ? ' ' . implode(' ', $table_terms) : '' ?>;
-
-<?= !empty($primary_key) ? "$primary_key\n" : '' ?>
-<?
-            $contents .= ob_get_clean();
+            $contents .= $record[ 0 ][ 'Create Table' ] . ";\n\n\n";
         }
 
         file_put_contents($file, $contents);

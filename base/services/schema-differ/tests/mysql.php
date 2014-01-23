@@ -60,28 +60,28 @@ extends PHPUnit_Framework_TestCase
     {
         $tables = $this->differ->get_ref_tables_to_create();
         $this->assertEquals(1, count($tables));
-        $this->assertEquals('add_ref_table', $tables[ 0 ]);
+        $this->assertEquals('schema_differ_ref_add', $tables[ 0 ]);
     }
 
     function test_ref_tables_to_drop()
     {
         $tables = $this->differ->get_ref_tables_to_drop();
         $this->assertEquals(1, count($tables));
-        $this->assertEquals('remove_ref_table', $tables[ 0 ]);
+        $this->assertEquals('schema_differ_ref_drop', $tables[ 0 ]);
     }
 
     function test_tables_to_create()
     {
         $tables = $this->differ->get_tables_to_create();
         $this->assertEquals(1, count($tables));
-        $this->assertEquals('add_table', $tables[ 0 ]);
+        $this->assertEquals('schema_differ_add', $tables[ 0 ]);
     }
 
     function test_tables_to_drop()
     {
         $tables = $this->differ->get_tables_to_drop();
         $this->assertEquals(1, count($tables));
-        $this->assertEquals('remove_table', $tables[ 0 ]);
+        $this->assertEquals('schema_differ_drop', $tables[ 0 ]);
     }
 
     function test_columns_to_create()
