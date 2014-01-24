@@ -96,7 +96,7 @@ if (!empty($temp[ 4 ]))
 // Find and create the handler.
 //
 
-$include_file = "$version/$entity.php";
+$include_file = "$version/" . preg_replace('/_/', '-', $entity) . ".php";
 $class_name   = "tiny_api_$entity" . '_Handler';
 
 require_once $include_file;
