@@ -14,8 +14,8 @@ require_once 'base/services/unit-testing.php';
 
 tiny_api_cli_main(
     tiny_Api_Cli_Conf::make()
-        ->add_description('Executes all unit tests found in any path specified '
-                          . 'in the PHP include path.'),
+        ->add_description('Executes all unit tests found in the current '
+                          . 'working directory.'),
     'main');
 
 // +------------------------------------------------------------+
@@ -26,18 +26,13 @@ function main(tiny_api_Cli $cli)
 {
     $cli->header('Unit Tests');
 
-    $utm          = tiny_api_Unit_Test_Manager::make($cli);
-    $include_path = explode(':', ini_get('include_path'));
-    foreach ($include_path as $path)
-    {
-        $files = null;
+    exec("/usr/bin/find "
+         . getcwd()
+         . " -name \"*.php\" | /bin/grep \"/tests/\"",
+         $files, $retval);
 
-        exec("/usr/bin/find $path/ -name \"*.php\" | /bin/grep \"/tests/\"",
-             $files, $retval);
-
-        $utm->execute($files);
-    }
-
-    $utm->print_summary();
+    $utm = tiny_api_Unit_Test_Manager::make($cli)
+            ->execute($files)
+            ->print_summary();
 }
 ?>
