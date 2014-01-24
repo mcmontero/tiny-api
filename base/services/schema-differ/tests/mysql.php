@@ -88,22 +88,38 @@ extends PHPUnit_Framework_TestCase
     {
         $columns = $this->differ->get_columns_to_create();
         $this->assertEquals(1, count($columns));
-        $this->assertEquals('diff_table.col_c', $columns[ 0 ]);
+        $this->assertEquals('schema_differ_cols.col_c', $columns[ 0 ]);
     }
 
     function test_columns_to_drop()
     {
         $columns = $this->differ->get_columns_to_drop();
         $this->assertEquals(1, count($columns));
-        $this->assertEquals('diff_table.col_z', $columns[ 0 ]);
+        $this->assertEquals('schema_differ_cols.col_z', $columns[ 0 ]);
     }
 
     function test_columns_to_modify()
     {
         $columns = $this->differ->get_columns_to_modify();
-        $this->assertEquals(2, count($columns));
-        $this->assertTrue(array_key_exists('diff_table.col_a', $columns));
-        $this->assertTrue(array_key_exists('diff_table.col_b', $columns));
+        $this->assertEquals(1, count($columns));
+        $this->assertTrue(array_key_exists('schema_differ_cols.col_b',
+                          $columns));
+    }
+
+    function test_foreign_keys_to_create()
+    {
+        $fks = $this->differ->get_foreign_keys_to_create();
+        $this->assertEquals(2, count($fks));
+        $this->assertEquals('schema_differ_fks_0_fk', $fks[ 0 ][ 'name' ]);
+        $this->assertEquals('schema_differ_fks_1_fk', $fks[ 1 ][ 'name' ]);
+    }
+
+    function test_foreign_keys_to_drop()
+    {
+        $fks = $this->differ->get_foreign_keys_to_drop();
+        $this->assertEquals(2, count($fks));
+        $this->assertEquals('schema_differ_fks_100_fk', $fks[ 0 ][ 'name' ]);
+        $this->assertEquals('schema_differ_fks_1_fk', $fks[ 1 ][ 'name' ]);
     }
 }
 ?>

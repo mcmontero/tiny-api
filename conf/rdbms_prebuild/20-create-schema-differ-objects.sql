@@ -46,22 +46,27 @@ drop table if exists schema_differ_source.schema_differ_cols;
 create table schema_differ_source.schema_differ_cols
 (
     col_a int unsigned not null unique,
-    col_b varchar(100) not null
+    col_b varchar(100) not null,
+    col_c char(3) default 'abc'
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_source.schema_differ_fks;
 create table schema_differ_source.schema_differ_fks
 (
     id int unsigned not null,
-    col_a int unsigned not null,
-    constraint schema_differ_fks_0_fk
-       foreign key (id)
-    references schema_differ_source.schema_differ_ref_add (id),
-    constraint schema_differ_fks_1_fk
-       foreign key (col_a)
-    references schema_differ_source.schema_differ_add (col_a)
-            on delete cascade
+    col_a int unsigned not null
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+alter table schema_differ_source.schema_differ_fks
+        add constraint schema_differ_fks_0_fk
+    foreign key (id)
+ references schema_differ_source.schema_differ_ref_add (id);
+
+alter table schema_differ_source.schema_differ_fks
+        add constraint schema_differ_fks_1_fk
+    foreign key (col_a)
+ references schema_differ_source.schema_differ_add (col_a)
+  on delete cascade;
 
 insert into schema_differ_source.schema_differ_ref_add
 (
@@ -123,11 +128,15 @@ drop table if exists schema_differ_target.schema_differ_fks;
 create table schema_differ_target.schema_differ_fks
 (
     id int unsigned not null,
-    col_a int unsigned not null,
-    constraint schema_differ_fks_100_fk
-       foreign key (id)
-    references schema_differ_target.schema_differ_drop (col_a),
-    constraint schema_differ_fks_1_fk
-       foreign key (col_a)
-    references schema_differ_target.schema_differ_cols (col_a)
+    col_a int unsigned not null
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+alter table schema_differ_target.schema_differ_fks
+        add constraint schema_differ_fks_100_fk
+    foreign key (id)
+ references schema_differ_target.schema_differ_drop (col_a);
+
+alter table schema_differ_target.schema_differ_fks
+        add constraint schema_differ_fks_1_fk
+    foreign key (col_a)
+ references schema_differ_target.schema_differ_cols (col_a);

@@ -56,7 +56,6 @@ class tiny_api_Mysql_Schema_Differ
     private $columns_to_modify;
     private $foreign_keys_to_create;
     private $foreign_keys_to_drop;
-    private $foreign_keys_to_modify;
 
     function __construct($source_connection_name,
                          $source_db_name,
@@ -97,6 +96,7 @@ class tiny_api_Mysql_Schema_Differ
 
     final public function execute()
     {
+        $this->verify_schemas();
         $this->map_prefixes_to_module_name();
 
         $this->compute_ref_table_differences();
@@ -122,6 +122,16 @@ class tiny_api_Mysql_Schema_Differ
     final public function get_columns_to_modify()
     {
         return $this->columns_to_modify;
+    }
+
+    final public function get_foreign_keys_to_create()
+    {
+        return $this->foreign_keys_to_create;
+    }
+
+    final public function get_foreign_keys_to_drop()
+    {
+        return $this->foreign_keys_to_drop;
     }
 
     final public function get_ref_tables_to_create()
@@ -309,7 +319,6 @@ class tiny_api_Mysql_Schema_Differ
             $this->foreign_keys_to_drop[] = $target_fks[ $fk_name ];
         }
 
-        $this->foreign_keys_to_modify = array();
         foreach ($source_fks as $constraint_name => $fk)
         {
             if (array_key_exists($constraint_name, $target_fks) &&
@@ -335,7 +344,7 @@ class tiny_api_Mysql_Schema_Differ
 
                     $this->foreign_keys_to_drop[] =
                         $source_fks[ $constraint_name ];
-                    $this->foreign_keys_to_add[] =
+                    $this->foreign_keys_to_create[] =
                         $source_fks[ $constraint_name ];
                 }
             }
@@ -557,6 +566,7 @@ class tiny_api_Mysql_Schema_Differ
             {
                 $fks[ $fk[ 'constraint_name' ] ] = array
                 (
+                    'name'           => $fk[ 'constraint_name' ],
                     'table_name'     => $fk[ 'table_name' ],
                     'ref_table_name' => $fk[ 'referenced_table_name' ],
                     'cols'           => array
@@ -615,6 +625,47 @@ class tiny_api_Mysql_Schema_Differ
         return in_array($table_name, $this->tables_to_drop);
     }
 
+    private function verify_schemas()
+    {
+        $this->notice('Verifying schemas...');
+
+        $query = 'select 1 as schema_exists
+                    from schemata
+                   where schema_name = ?';
+
+        $record = $this->source->query
+        (
+            __METHOD__,
+            $query,
+            array($this->source_db_name)
+        );
+
+        if (!array_key_exists(0, $record) ||
+            $record[ 0 ][ 'schema_exists' ] != 1)
+        {
+            $this->error('source schema "'
+                         . $this->source_db_name
+                         . "\" does not exist", 1);
+            exit(1);
+        }
+
+        $record = $this->target->query
+        (
+            __METHOD__,
+            $query,
+            array($this->target_db_name)
+        );
+
+        if (!array_key_exists(0, $record) ||
+            $record[ 0 ][ 'schema_exists' ] != 1)
+        {
+            $this->error('target schema "'
+                         . $this->target_db_name
+                         . "\" does not exist", 1);
+            exit(1);
+        }
+    }
+
     private function warn($message, $indent = null)
     {
         if (is_null($this->cli))
@@ -625,9 +676,33 @@ class tiny_api_Mysql_Schema_Differ
         $this->cli->error($message, $indent);
     }
 
+    private function write_add_foreign_key_constraint_sql()
+    {
+        $file = '70-foreign_keys.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->foreign_keys_to_create as $fk)
+        {
+            ob_start();
+?>
+alter table <?= $fk[ 'table_name' ] . "\n" ?>
+        add constraint <?= $fk[ 'name' ] . "\n" ?>
+    foreign key (<?= implode(', ', $fk[ 'cols' ]) ?>)
+ references <?= $fk[ 'ref_table_name' ] . "\n" ?>
+            (<?= implode(', ', $fk[ 'ref_cols' ]) ?>)
+  on delete <?= strtolower($fk[ 'delete_rule' ]) ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_add_modify_columns_sql()
     {
-        $file = '30-columns.sql';
+        $file = '40-columns.sql';
 
         $this->notice($file, 1);
 
@@ -756,7 +831,7 @@ values
 
     private function write_add_tables_sql()
     {
-        $file = '20-tables.sql';
+        $file = '30-tables.sql';
 
         $this->notice($file, 1);
 
@@ -775,9 +850,29 @@ values
         file_put_contents($file, $contents);
     }
 
+    private function write_drop_foreign_key_constraint_sql()
+    {
+        $file = '20-foreign_keys.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->foreign_keys_to_drop as $fk)
+        {
+            ob_start();
+?>
+alter table <?= $fk[ 'table_name' ] . "\n" ?>
+       drop foreign key <?= $fk[ 'name' ] ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_drop_ref_tables_sql()
     {
-        $file = '80-ref_tables.sql';
+        $file = '60-ref_tables.sql';
 
         $this->notice($file, 1);
 
@@ -792,7 +887,7 @@ values
 
     private function write_drop_tables_sql()
     {
-        $file = '70-tables.sql';
+        $file = '50-tables.sql';
 
         $this->notice($file, 1);
 
@@ -815,10 +910,12 @@ values
         $this->notice('Writing upgrade scripts into current directory...');
 
         $this->write_add_ref_tables_sql();
+        $this->write_drop_foreign_key_constraint_sql();
         $this->write_add_tables_sql();
         $this->write_add_modify_columns_sql();
         $this->write_drop_tables_sql();
         $this->write_drop_ref_tables_sql();
+        $this->write_add_foreign_key_constraint_sql();
     }
 }
 ?>
