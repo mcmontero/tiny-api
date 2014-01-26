@@ -157,7 +157,8 @@ extends tiny_api_Base_Rdbms
         $query = "/* $caller */ $query";
         if (($dss = $this->mysql->prepare($query)) === false)
         {
-            throw new tiny_Api_Data_Store_Exception($this->mysql->error);
+            throw new tiny_Api_Data_Store_Exception(
+                        $this->mysql->error . ":\n\n" . $query);
         }
 
         $this->bind($dss, $binds);

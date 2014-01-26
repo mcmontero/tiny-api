@@ -92,6 +92,22 @@ create index schema_differ_mod_2_idx
     on schema_differ_source.schema_differ_cols
         (col_b, col_c);
 
+/**
+ * This index should not show up in the differ because it is being added
+ * when the table is created.
+ */
+create unique index schema_differ_add_0_uk
+    on schema_differ_source.schema_differ_add
+        (col_c);
+
+create unique index schema_differ_add_1_uk
+    on schema_differ_source.schema_differ_ref_modify
+        (value);
+
+create unique index schema_differ_mod_2_uk
+    on schema_differ_source.schema_differ_cols
+        (col_c, col_b);
+
 insert into schema_differ_source.schema_differ_ref_modify
 (
     id,
@@ -180,6 +196,14 @@ create index schema_differ_mod_2_idx
 create index schema_differ_drop_3_idx
     on schema_differ_target.schema_differ_ref_modify
         (id);
+
+create unique index schema_differ_mod_2_uk
+    on schema_differ_target.schema_differ_cols
+        (col_b);
+
+create unique index schema_differ_drop_3_uk
+    on schema_differ_target.schema_differ_ref_modify
+        (display_order);
 
 insert into schema_differ_target.schema_differ_ref_modify
 (

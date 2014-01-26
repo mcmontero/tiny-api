@@ -56,6 +56,11 @@ extends PHPUnit_Framework_TestCase
                                 ->execute();
     }
 
+    function test_there_are_differences()
+    {
+        $this->assertTrue($this->differ->there_are_differences());
+    }
+
     function test_ref_tables_to_create()
     {
         $tables = $this->differ->get_ref_tables_to_create();
@@ -149,9 +154,9 @@ extends PHPUnit_Framework_TestCase
         $this->assertEquals(3, $data[ 0 ][ 1 ]);
     }
 
-    function test_indexes_to_add()
+    function test_indexes_to_create()
     {
-        $indexes = $this->differ->get_indexes_to_add();
+        $indexes = $this->differ->get_indexes_to_create();
         $this->assertTrue(is_array($indexes));
         $this->assertEquals(2, count($indexes));
         $this->assertEquals('schema_differ_add_1_idx',
@@ -169,6 +174,24 @@ extends PHPUnit_Framework_TestCase
                             $indexes[ 0 ][ 'index_name' ]);
         $this->assertEquals('schema_differ_mod_2_idx',
                             $indexes[ 1 ][ 'index_name' ]);
+    }
+
+    function test_unique_keys_to_create()
+    {
+        $uks = $this->differ->get_unique_keys_to_create();
+        $this->assertTrue(is_array($uks));
+        $this->assertEquals(2, count($uks));
+        $this->assertEquals('schema_differ_add_1_uk', $uks[ 0 ][ 'name' ]);
+        $this->assertEquals('schema_differ_mod_2_uk', $uks[ 1 ][ 'name' ]);
+    }
+
+    function test_unique_keys_to_drop()
+    {
+        $uks = $this->differ->get_unique_keys_to_drop();
+        $this->assertTrue(is_array($uks));
+        $this->assertEquals(2, count($uks));
+        $this->assertEquals('schema_differ_drop_3_uk', $uks[ 0 ][ 'name' ]);
+        $this->assertEquals('schema_differ_mod_2_uk', $uks[ 1 ][ 'name' ]);
     }
 }
 ?>

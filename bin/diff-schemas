@@ -15,6 +15,7 @@ require_once 'base/services/schema-differ/mysql.php';
 
 tiny_api_cli_main(
     tiny_Api_Cli_Conf::make()
+        ->unlimited_memory()
         ->add_description('Computes the differences between two schemas and '
                           . 'reports what DDL statements to execute to make '
                           . 'the target a replica of the source.')
