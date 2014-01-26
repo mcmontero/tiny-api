@@ -121,5 +121,54 @@ extends PHPUnit_Framework_TestCase
         $this->assertEquals('schema_differ_fks_100_fk', $fks[ 0 ][ 'name' ]);
         $this->assertEquals('schema_differ_fks_1_fk', $fks[ 1 ][ 'name' ]);
     }
+
+    function test_ref_data_to_add()
+    {
+        $data = $this->differ->get_ref_data_to_add();
+        $this->assertTrue(is_array($data));
+        $this->assertEquals(1, count($data));
+        $this->assertEquals('schema_differ_ref_modify', $data[ 0 ][ 0 ]);
+        $this->assertEquals(1, $data[ 0 ][ 1 ]);
+    }
+
+    function test_ref_data_to_modify()
+    {
+        $data = $this->differ->get_ref_data_to_modify();
+        $this->assertTrue(is_array($data));
+        $this->assertEquals(1, count($data));
+        $this->assertEquals('schema_differ_ref_modify', $data[ 0 ][ 0 ]);
+        $this->assertEquals(2, $data[ 0 ][ 1 ]);
+    }
+
+    function test_ref_data_to_remove()
+    {
+        $data = $this->differ->get_ref_data_to_remove();
+        $this->assertTrue(is_array($data));
+        $this->assertEquals(1, count($data));
+        $this->assertEquals('schema_differ_ref_modify', $data[ 0 ][ 0 ]);
+        $this->assertEquals(3, $data[ 0 ][ 1 ]);
+    }
+
+    function test_indexes_to_add()
+    {
+        $indexes = $this->differ->get_indexes_to_add();
+        $this->assertTrue(is_array($indexes));
+        $this->assertEquals(2, count($indexes));
+        $this->assertEquals('schema_differ_add_1_idx',
+                            $indexes[ 0 ][ 'index_name' ]);
+        $this->assertEquals('schema_differ_mod_2_idx',
+                            $indexes[ 1 ][ 'index_name' ]);
+    }
+
+    function test_indexes_to_drop()
+    {
+        $indexes = $this->differ->get_indexes_to_drop();
+        $this->assertTrue(is_array($indexes));
+        $this->assertEquals(2, count($indexes));
+        $this->assertEquals('schema_differ_drop_3_idx',
+                            $indexes[ 0 ][ 'index_name' ]);
+        $this->assertEquals('schema_differ_mod_2_idx',
+                            $indexes[ 1 ][ 'index_name' ]);
+    }
 }
 ?>

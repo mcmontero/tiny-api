@@ -26,6 +26,14 @@
 +------------------------------------------------------------+
 */
 
+drop table if exists schema_differ_source.schema_differ_ref_modify;
+create table schema_differ_source.schema_differ_ref_modify
+(
+    id int unsigned not null auto_increment primary key,
+    value varchar(32) not null,
+    display_order int not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
 drop table if exists schema_differ_source.schema_differ_ref_add;
 create table schema_differ_source.schema_differ_ref_add
 (
@@ -60,7 +68,7 @@ create table schema_differ_source.schema_differ_fks
 alter table schema_differ_source.schema_differ_fks
         add constraint schema_differ_fks_0_fk
     foreign key (id)
- references schema_differ_source.schema_differ_ref_add (id);
+ references schema_differ_source.schema_differ_ref_modify (id);
 
 alter table schema_differ_source.schema_differ_fks
         add constraint schema_differ_fks_1_fk
@@ -68,7 +76,23 @@ alter table schema_differ_source.schema_differ_fks
  references schema_differ_source.schema_differ_add (col_a)
   on delete cascade;
 
-insert into schema_differ_source.schema_differ_ref_add
+/**
+ * This index should not show up in the differ because it is being added
+ * when the table is created.
+ */
+create index schema_differ_add_0_idx
+    on schema_differ_source.schema_differ_add
+        (col_a, col_b, col_c);
+
+create index schema_differ_add_1_idx
+    on schema_differ_source.schema_differ_ref_modify
+        (display_order);
+
+create index schema_differ_mod_2_idx
+    on schema_differ_source.schema_differ_cols
+        (col_b, col_c);
+
+insert into schema_differ_source.schema_differ_ref_modify
 (
     id,
     value,
@@ -81,7 +105,7 @@ values
     1
 );
 
-insert into schema_differ_source.schema_differ_ref_add
+insert into schema_differ_source.schema_differ_ref_modify
 (
     id,
     value,
@@ -99,6 +123,14 @@ values
 | TARGET SCHEMA                                              |
 +------------------------------------------------------------+
 */
+
+drop table if exists schema_differ_target.schema_differ_ref_modify;
+create table schema_differ_target.schema_differ_ref_modify
+(
+    id int unsigned not null auto_increment primary key,
+    value varchar(32) not null,
+    display_order int not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 drop table if exists schema_differ_target.schema_differ_ref_drop;
 create table schema_differ_target.schema_differ_ref_drop
@@ -140,3 +172,37 @@ alter table schema_differ_target.schema_differ_fks
         add constraint schema_differ_fks_1_fk
     foreign key (col_a)
  references schema_differ_target.schema_differ_cols (col_a);
+
+create index schema_differ_mod_2_idx
+    on schema_differ_target.schema_differ_cols
+        (col_b);
+
+create index schema_differ_drop_3_idx
+    on schema_differ_target.schema_differ_ref_modify
+        (id);
+
+insert into schema_differ_target.schema_differ_ref_modify
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    2,
+    'xyz',
+    2
+);
+
+insert into schema_differ_target.schema_differ_ref_modify
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    3,
+    'def',
+   3
+);

@@ -44,18 +44,23 @@ class tiny_api_Mysql_Schema_Differ
     private $target;
     private $source_db_name;
     private $target_db_name;
-    private $prefix_module_name_map;
     private $write_upgrade_scripts;
     private $ref_tables_to_create;
     private $ref_tables_to_drop;
     private $tables_to_create;
     private $tables_to_drop;
     private $table_create_drop_list;
+    private $ref_table_drop_list;
     private $columns_to_create;
     private $columns_to_drop;
     private $columns_to_modify;
     private $foreign_keys_to_create;
     private $foreign_keys_to_drop;
+    private $ref_data_to_add;
+    private $ref_data_to_remove;
+    private $ref_data_to_modify;
+    private $indexes_to_add;
+    private $indexes_to_drop;
 
     function __construct($source_connection_name,
                          $source_db_name,
@@ -97,12 +102,13 @@ class tiny_api_Mysql_Schema_Differ
     final public function execute()
     {
         $this->verify_schemas();
-        $this->map_prefixes_to_module_name();
 
         $this->compute_ref_table_differences();
         $this->compute_table_differences();
         $this->compute_column_differences();
         $this->compute_foreign_key_differences();
+        $this->compute_ref_table_data_differences();
+        $this->compute_index_differences();
 
         $this->write_upgrade_scripts();
 
@@ -132,6 +138,31 @@ class tiny_api_Mysql_Schema_Differ
     final public function get_foreign_keys_to_drop()
     {
         return $this->foreign_keys_to_drop;
+    }
+
+    final public function get_indexes_to_add()
+    {
+        return $this->indexes_to_add;
+    }
+
+    final public function get_indexes_to_drop()
+    {
+        return $this->indexes_to_drop;
+    }
+
+    final public function get_ref_data_to_add()
+    {
+        return $this->ref_data_to_add;
+    }
+
+    final public function get_ref_data_to_modify()
+    {
+        return $this->ref_data_to_modify;
+    }
+
+    final public function get_ref_data_to_remove()
+    {
+        return $this->ref_data_to_remove;
     }
 
     final public function get_ref_tables_to_create()
@@ -179,10 +210,13 @@ class tiny_api_Mysql_Schema_Differ
                          extra
                     from columns
                    where table_schema = ?
-                     and table_name not like '%\_ref\_%'
-                     and table_name not in ("
-                         . $this->table_create_drop_list
-                         . ")";
+                     and table_name not like '%\_ref\_%'";
+        if (!empty($this->table_create_drop_list))
+        {
+            $query .= 'and table_name not in ('
+                      . $this->table_create_drop_list
+                      . ')';
+        }
 
         $source_columns =
             $this->query_source(
@@ -259,6 +293,142 @@ class tiny_api_Mysql_Schema_Differ
                     break;
                 }
             }
+        }
+    }
+
+    private function compute_index_differences()
+    {
+        $this->notice('Computing index differences...');
+
+        $query = "select table_name,
+                         index_name,
+                         seq_in_index,
+                         column_name
+                    from statistics
+                   where index_schema = ?
+                     and index_name like '%\_idx'";
+        if (!empty($this->table_create_drop_list))
+        {
+            $query .= ' and table_name not in ('
+                      . $this->table_create_drop_list
+                      . ')';
+        }
+
+        $source_indexes =
+            $this->query_source(
+                __METHOD__,
+                $query,
+                array($this->source_db_name));
+        $target_indexes =
+            $this->query_target(
+                __METHOD__,
+                $query,
+                array($this->target_db_name));
+
+        $source_names = array();
+        $source       = array();
+        foreach ($source_indexes as $index)
+        {
+            $source_names[ $index[ 'index_name' ] ] = true;
+
+            if (!array_key_exists($index[ 'index_name' ], $source))
+            {
+                $source[ $index[ 'index_name' ] ] = array
+                (
+                    'table_name' => $index[ 'table_name' ],
+                    'cols'       => array()
+                );
+            }
+
+            $source[ $index[ 'index_name' ] ]
+                   [ 'cols' ]
+                   [ intval($index[ 'seq_in_index' ]) ] =
+                    $index[ 'column_name' ];
+        }
+
+        $target_names = array();
+        $target       = array();
+        foreach ($target_indexes as $index)
+        {
+            $target_names[ $index[ 'index_name' ] ] = true;
+
+            if (!array_key_exists($index[ 'index_name' ], $target))
+            {
+                $target[ $index[ 'index_name' ] ] = array
+                (
+                    'table_name' => $index[ 'table_name' ],
+                    'cols'       => array()
+                );
+            }
+
+            $target[ $index[ 'index_name' ] ]
+                   [ 'cols' ]
+                   [ intval($index[ 'seq_in_index' ]) ] =
+                    $index[ 'column_name' ];
+        }
+
+        $indexes_to_add =
+            array_diff(array_keys($source_names),
+                       array_keys($target_names));
+        $indexes_to_drop =
+            array_diff(array_keys($target_names),
+                       array_keys($source_names));
+        $indexes_to_modify =
+            array();
+
+        foreach ($source as $index_name => $data)
+        {
+            if (array_key_exists($index_name, $target) &&
+                implode(',', $data[ 'cols' ]) !=
+                implode(',', $target[ $index_name ][ 'cols' ]))
+            {
+                $indexes_to_modify[] = $index_name;
+            }
+        }
+
+        $this->indexes_to_add = array();
+        foreach ($indexes_to_add as $index_name)
+        {
+            $this->notice("(+) $index_name", 1);
+
+            $this->indexes_to_add[] = array
+            (
+                'table_name' => $source[ $index_name ][ 'table_name' ],
+                'index_name' => $index_name,
+                'cols'       => $source[ $index_name ][ 'cols' ]
+            );
+        }
+
+        $this->indexes_to_drop = array();
+        foreach ($indexes_to_drop as $index_name)
+        {
+            $this->notice("(-) $index_name", 1);
+
+            $this->indexes_to_drop[] = array
+            (
+                'table_name' => $target[ $index_name ][ 'table_name' ],
+                'index_name' => $index_name,
+                'cols'       => $target[ $index_name ][ 'cols' ]
+            );
+        }
+
+        foreach ($indexes_to_modify as $index_name)
+        {
+            $this->notice("(=) $index_name", 1);
+
+            $this->indexes_to_add[] = array
+            (
+                'table_name' => $source[ $index_name ][ 'table_name' ],
+                'index_name' => $index_name,
+                'cols'       => $source[ $index_name ][ 'cols' ]
+            );
+
+            $this->indexes_to_drop[] = array
+            (
+                'table_name' => $target[ $index_name ][ 'table_name' ],
+                'index_name' => $index_name,
+                'cols'       => $target[ $index_name ][ 'cols' ]
+            );
         }
     }
 
@@ -351,6 +521,146 @@ class tiny_api_Mysql_Schema_Differ
         }
     }
 
+    private function compute_ref_table_data_differences()
+    {
+        $this->notice('Computing reference table data differences...');
+
+        $query = "select table_name
+                    from tables
+                   where table_schema = ?
+                     and table_name like '%\_ref\_%'";
+        if (!empty($this->ref_table_drop_list))
+        {
+            $query .= ' and table_name not in ('
+                      . $this->ref_table_drop_list
+                      . ')';
+        }
+
+        $source_tables =
+            $this->flatten_tables(
+                $this->query_source(
+                    __METHOD__,
+                    $query,
+                    array($this->source_db_name)));
+        $target_tables =
+            $this->flatten_tables(
+                $this->query_source(
+                    __METHOD__,
+                    $query,
+                    array($this->target_db_name)));
+
+        $source_data = array();
+        foreach ($source_tables as $table_name)
+        {
+            $records = $this->query_source
+            (
+                __METHOD__,
+                'select id,
+                        value,
+                        display_order
+                   from ' . $this->source_db_name . ".$table_name
+                  order by id asc",
+                  array()
+            );
+
+            $source_data[ $table_name ] = array();
+
+            foreach ($records as $record)
+            {
+                $source_data[ $table_name ][ $record[ 'id' ] ] = array
+                (
+                    $record[ 'value' ],
+                    $record[ 'display_order' ]
+                );
+            }
+        }
+
+        $target_data = array();
+        foreach ($target_tables as $table_name)
+        {
+            $records = $this->query_target
+            (
+                __METHOD__,
+                'select id,
+                        value,
+                        display_order
+                   from ' . $this->target_db_name . ".$table_name
+                  order by id asc",
+                array()
+            );
+
+            $target_data[ $table_name ] = array();
+
+            foreach ($records as $record)
+            {
+                $target_data[ $table_name ][ $record[ 'id' ] ] = array
+                (
+                    $record[ 'value' ],
+                    $record[ 'display_order' ]
+                );
+            }
+        }
+
+        $this->ref_data_to_add    = array();
+        $this->ref_data_to_modify = array();
+        foreach ($source_data as $table_name => $data)
+        {
+            foreach ($data as $id => $values)
+            {
+                if (!array_key_exists($table_name, $target_data) ||
+                    !array_key_exists($id, $target_data[ $table_name ]))
+                {
+                    $this->notice("(+) $table_name #$id", 1);
+
+                    $this->ref_data_to_add[] = array
+                    (
+                        $table_name,
+                        $id,
+                        $values[ 0 ],
+                        $values[ 1 ]
+                    );
+                }
+                else
+                {
+                    if (implode(',', $values) !=
+                        implode(',', $target_data[ $table_name ][ $id ]))
+                    {
+                        $this->notice("(=) $table_name #$id", 1);
+
+                        $this->ref_data_to_modify[] = array
+                        (
+                            $table_name,
+                            $id,
+                            $values[ 0 ],
+                            $values[ 1 ]
+                        );
+                    }
+                }
+            }
+        }
+
+        $this->ref_data_to_remove = array();
+        foreach ($target_data as $table_name => $data)
+        {
+            foreach ($data as $id => $values)
+            {
+                if (!array_key_exists($table_name, $source_data) ||
+                    !array_key_exists($id, $source_data[ $table_name ]))
+                {
+                    $this->notice("(-) $table_name #$id", 1);
+
+                    $this->ref_data_to_remove[] = array
+                    (
+                        $table_name,
+                        $id,
+                        $values[ 0 ],
+                        $values[ 1 ]
+                    );
+                }
+            }
+        }
+    }
+
     private function compute_ref_table_differences()
     {
         $this->notice('Computing reference table differences...');
@@ -380,12 +690,18 @@ class tiny_api_Mysql_Schema_Differ
             $this->notice("(+) $table", 1);
         }
 
+        $drop_list = array();
+
         $this->ref_tables_to_drop =
             array_values(array_diff($target_tables, $source_tables));
         foreach ($this->ref_tables_to_drop as $table)
         {
             $this->notice("(-) $table", 1);
+
+            $drop_list[] = "'$table'";
         }
+
+        $this->ref_table_drop_list = implode(',', $drop_list);
     }
 
     private function compute_table_differences()
@@ -427,7 +743,7 @@ class tiny_api_Mysql_Schema_Differ
         {
             $this->notice("(-) $table", 1);
 
-            $create_drop_list[] = "'" . $table . "'";
+            $create_drop_list[] = "'$table'";
         }
 
         $this->table_create_drop_list = implode(', ', $create_drop_list);
@@ -495,56 +811,6 @@ class tiny_api_Mysql_Schema_Differ
         }
 
         return $terms;
-    }
-
-    private function map_prefixes_to_module_name()
-    {
-        $this->notice('Mapping module prefixes to names...');
-
-        $this->prefix_module_name_map = array();
-
-        $paths = explode(':', ini_get('include_path'));
-        foreach ($paths as $path)
-        {
-            $command = "/usr/bin/find $path/ -type f -name build.php";
-            $output  = null;
-            exec($command, $output, $retval);
-
-            if ($retval)
-            {
-                throw new tiny_api_Schema_Differ_Exception(
-                            "failed to execute \"$command\": "
-                            . print_r($output, true));
-            }
-
-            foreach ($output as $build_file)
-            {
-                if (!preg_match('#^(.*?)/sql/ddl/build.php#',
-                                preg_replace("#^$path/?#", '', $build_file),
-                                $matches))
-                {
-                    throw new tiny_api_Schema_Differ_Exception(
-                                "could not get module name from build file "
-                                . "include path \"$build_file\"");
-                }
-                $module_name = $matches[ 1 ];
-
-                $contents = file_get_contents($build_file);
-                if ($contents &&
-                    preg_match('/function (.*)_build\\s?\(/msi',
-                               $contents, $matches))
-                {
-                    $prefix = $matches[ 1 ];
-                }
-
-                if (!empty($module_name) && !empty($prefix))
-                {
-                    $this->notice("$prefix => $module_name", 1);
-
-                    $this->prefix_module_name_map[ $prefix ] = $module_name;
-                }
-            }
-        }
     }
 
     private function notice($message, $indent = null)
@@ -678,7 +944,7 @@ class tiny_api_Mysql_Schema_Differ
 
     private function write_add_foreign_key_constraint_sql()
     {
-        $file = '70-foreign_keys.sql';
+        $file = '50-foreign_keys.sql';
 
         $this->notice($file, 1);
 
@@ -700,9 +966,30 @@ alter table <?= $fk[ 'table_name' ] . "\n" ?>
         file_put_contents($file, $contents);
     }
 
+    private function write_add_indexes_sql()
+    {
+        $file = '55-indexes.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->indexes_to_add as $index)
+        {
+            ob_start();
+?>
+create index <?= $index[ 'index_name' ]. "\n" ?>
+          on <?= $index[ 'table_name' ] . "\n" ?>
+              (<?= implode(',', $index[ 'cols' ]) ?>);
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_add_modify_columns_sql()
     {
-        $file = '40-columns.sql';
+        $file = '30-columns.sql';
 
         $this->notice($file, 1);
 
@@ -794,36 +1081,6 @@ alter table <?= $table_name . "\n" ?>
             );
 
             $contents .= $record[ 0 ][ 'Create Table' ] . ";\n\n";
-
-            $records = $this->source->query
-            (
-                __METHOD__,
-                "select id,
-                        value,
-                        display_order
-                   from " . $this->source_db_name . ".$table_name
-                  order by id asc"
-            );
-
-            foreach ($records as $record)
-            {
-                ob_start();
-?>
-insert into <?= $table_name . "\n" ?>
-(
-    id,
-    value,
-    display_order
-)
-values
-(
-    '<?= $record[ 'id' ] ?>',
-    '<?= $record[ 'value' ] ?>',
-    '<?= $record[ 'display_order' ] ?>'
-);
-<?
-                $contents .= ob_get_clean() . "\n";
-            }
         }
 
         file_put_contents($file, $contents . "\n");
@@ -831,7 +1088,7 @@ values
 
     private function write_add_tables_sql()
     {
-        $file = '30-tables.sql';
+        $file = '25-tables.sql';
 
         $this->notice($file, 1);
 
@@ -852,7 +1109,7 @@ values
 
     private function write_drop_foreign_key_constraint_sql()
     {
-        $file = '20-foreign_keys.sql';
+        $file = '15-foreign_keys.sql';
 
         $this->notice($file, 1);
 
@@ -870,9 +1127,29 @@ alter table <?= $fk[ 'table_name' ] . "\n" ?>
         file_put_contents($file, $contents);
     }
 
+    private function write_drop_indexes_sql()
+    {
+        $file = '20-indexes.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->indexes_to_drop as $index)
+        {
+            ob_start();
+?>
+alter table <?= $index[ 'table_name' ] . "\n" ?>
+       drop index <?= $index[ 'index_name' ] ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
     private function write_drop_ref_tables_sql()
     {
-        $file = '60-ref_tables.sql';
+        $file = '40-ref_tables.sql';
 
         $this->notice($file, 1);
 
@@ -887,7 +1164,7 @@ alter table <?= $fk[ 'table_name' ] . "\n" ?>
 
     private function write_drop_tables_sql()
     {
-        $file = '50-tables.sql';
+        $file = '35-tables.sql';
 
         $this->notice($file, 1);
 
@@ -895,6 +1172,58 @@ alter table <?= $fk[ 'table_name' ] . "\n" ?>
         foreach ($this->tables_to_drop as $table_name)
         {
             $contents .= "drop table if exists $table_name;\n\n";
+        }
+
+        file_put_contents($file, $contents);
+    }
+
+    private function write_ref_table_data_sql()
+    {
+        $file = '45-ref_data.sql';
+
+        $this->notice($file, 1);
+
+        $contents = '';
+        foreach ($this->ref_data_to_add as $data)
+        {
+            ob_start();
+?>
+insert into <?= $data[ 0 ] . "\n" ?>
+(
+    id,
+    value,
+    display_order
+)
+values
+(
+    <?= $data[ 1 ] ?>,
+    '<?= $data[ 2 ] ?>',
+    <?= $data[ 3 ] . "\n" ?>
+);
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        foreach ($this->ref_data_to_modify as $data)
+        {
+            ob_start();
+?>
+update <?= $data[ 0 ] . "\n" ?>
+   set value = '<?= $data[ 2 ] ?>',
+       display_order = <?= $data[ 3 ] . "\n" ?>
+ where id = <?= $data[ 1 ] ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        foreach ($this->ref_data_to_remove as $data)
+        {
+            ob_start();
+?>
+delete from <?= $data[ 0 ] . "\n" ?>
+      where id = <?= $data[ 1 ] ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
         }
 
         file_put_contents($file, $contents);
@@ -911,11 +1240,14 @@ alter table <?= $fk[ 'table_name' ] . "\n" ?>
 
         $this->write_add_ref_tables_sql();
         $this->write_drop_foreign_key_constraint_sql();
+        $this->write_drop_indexes_sql();
         $this->write_add_tables_sql();
         $this->write_add_modify_columns_sql();
         $this->write_drop_tables_sql();
         $this->write_drop_ref_tables_sql();
+        $this->write_ref_table_data_sql();
         $this->write_add_foreign_key_constraint_sql();
+        $this->write_add_indexes_sql();
     }
 }
 ?>
