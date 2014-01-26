@@ -70,7 +70,7 @@ PHP CONFIGURATION
 REST API URL SCHEME
 ===================
 
-    - https://[domain]/[version number]/[entity]{/accessor}{/id}
+    - https://[domain]/[version number]/[entity]{/accessor/../..}{/id}
 
       Examples:
 
@@ -78,3 +78,7 @@ REST API URL SCHEME
         https://api.your-domain.com/1.1/user/public-profile
         https://api.your-domain.com/1.1/user/1234
         https://api.your-domain.com/2.0/store/manager/5678
+        https://api.your-domain.com/3.0/client/products/widgets/list
+
+    - The accessor part of the URL can now be infinite depth.  Regardless of
+      depth, an ID value can always be provided.
