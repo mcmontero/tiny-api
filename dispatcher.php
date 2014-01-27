@@ -25,11 +25,23 @@
 // +------------------------------------------------------------+
 
 //
+// Determine the server variable to use for the URL.
+//
+
+$url = array_key_exists('REDIRECT_URL', $_SERVER) ?
+        $_SERVER[ 'REDIRECT_URL' ] : $_SERVER[ 'SCRIPT_URL' ];
+
+//
+// Handle /favicon.ico requests.
+//
+
+_tiny_api_dispatcher_favicon($url);
+
+//
 // Perform superficial request verification.
 //
 
-@$temp = explode('/', (array_key_exists('REDIRECT_URL', $_SERVER) ?
-                        $_SERVER[ 'REDIRECT_URL' ] : $_SERVER[ 'SCRIPT_URL' ]));
+@$temp = explode('/', $url);
 if (count($temp) < 3)
 {
     error_log(new tiny_api_Dispatcher_Exception(
@@ -56,7 +68,6 @@ if ($last == $entity)
     $last = null;
 }
 
-_tiny_api_dispatcher_favicon($version);
 list($accessor, $id) = _tiny_api_dispatcher_accessor_and_id($accessor, $last);
 
 //
@@ -95,12 +106,13 @@ function _tiny_api_dispatcher_accessor_and_id($accessor, $last)
  * Determines if the request being made is for favicon.ico and handles the
  * requests if tiny api is configured to do so.
  */
-function _tiny_api_dispatcher_favicon($version)
+function _tiny_api_dispatcher_favicon($url)
 {
-    if (!preg_match('/^[0-9\.]+$/', $version))
+    global $__tiny_api_conf__;
+
+    if ($url == '/favicon.ico')
     {
-        if ($version == 'favicon.ico' &&
-            !is_null($__tiny_api_conf__[ 'favicon.ico redirect url' ]))
+        if (!is_null($__tiny_api_conf__[ 'favicon.ico redirect url' ]))
         {
             http_response_code(TINY_API_RESPONSE_MOVED_PERMANENTLY);
             header('Location: '
