@@ -881,7 +881,13 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
 
     private function add_indexed_cols(array $cols)
     {
-        $this->indexed_cols[ implode(',', $cols) ] = true;
+        $num_cols = count($cols);
+        for ($i = 1; $i <= $num_cols; $i++)
+        {
+            $this->indexed_cols
+                [ implode(',', array_slice($cols, 0, $i)) ] = true;
+        }
+
         return $this;
     }
 
