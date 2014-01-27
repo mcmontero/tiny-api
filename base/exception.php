@@ -82,6 +82,14 @@ class tiny_api_Dispatcher_Exception extends tiny_api_Exception {}
 class tiny_Api_Data_Store_Exception extends tiny_api_Exception {}
 
 //
+// +---------------------------------------------+
+// | tiny_api_Data_Store_Duplicate_Key_Exception |
+// +---------------------------------------------+
+//
+
+class tiny_api_Data_Store_Duplicate_Key_Exception extends tiny_api_Exception {}
+
+//
 // +------------------------+
 // | tiny_api_Cli_Exception |
 // +------------------------+

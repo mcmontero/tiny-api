@@ -100,7 +100,15 @@ extends tiny_api_Base_Rdbms
 
         if ($dss->execute() === false)
         {
-            throw new tiny_Api_Data_Store_Exception($dss->error);
+            if ($dss->errno == 1062)
+            {
+                throw new tiny_api_Data_Store_Duplicate_Key_Exception(
+                                        $dss->error);
+            }
+            else
+            {
+                throw new tiny_Api_Data_Store_Exception($dss->error);
+            }
         }
 
         $dss->free_result();
