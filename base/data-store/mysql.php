@@ -108,8 +108,8 @@ extends tiny_api_Base_Rdbms
             else
             {
                 throw new tiny_Api_Data_Store_Exception(
-                            "execution of this query:\n\n$queryi\n\n"
-                            . print_r($binds, true)
+                            "execution of this query:\n\n$query\n\n"
+                            . print_r($vals, true)
                             . "\nproduced this error:\n\n" . $dss->error);
             }
         }
