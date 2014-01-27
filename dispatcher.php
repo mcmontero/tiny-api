@@ -49,7 +49,12 @@ if (count($temp) < 3)
 $version  = $temp[ 1 ];
 $entity   = $temp[ 2 ];
 $accessor = array_slice($temp, 3, -1);
-$last     = end($temp);
+
+$last = end($temp);
+if ($last == $entity)
+{
+    $last = null;
+}
 
 _tiny_api_dispatcher_favicon($version);
 list($accessor, $id) = _tiny_api_dispatcher_accessor_and_id($accessor, $last);
