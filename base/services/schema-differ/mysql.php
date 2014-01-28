@@ -1176,9 +1176,14 @@ alter table <?= $column[ 0 ][ 'table_name' ] . "\n" ?>
         add <?= $column[ 0 ][ 'column_name' ] . "\n" ?>
             <?= $column[ 0 ][ 'column_type' ] ?>
 <?
-            $contents .= ob_get_clean() . "\n";
+            $contents .= ob_get_clean();
 
             $terms = $this->get_column_terms($column[ 0 ]);
+            if (!empty($terms))
+            {
+                $contents .= "\n";
+            }
+
             foreach ($terms as $index => $term)
             {
                 $terms[ $index ] = "            $term";
