@@ -1247,7 +1247,12 @@ alter table <?= $table_name . "\n" ?>
             $contents .= $record[ 0 ][ 'Create Table' ] . ";\n\n";
         }
 
-        file_put_contents($file, $contents . "\n");
+        if (!empty($contents))
+        {
+            $contents .= "\n";
+        }
+
+        file_put_contents($file, $contents);
     }
 
     private function write_add_tables_sql()
