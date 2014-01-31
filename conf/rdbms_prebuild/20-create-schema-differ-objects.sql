@@ -65,6 +65,13 @@ create table schema_differ_source.schema_differ_fks
     col_a int unsigned not null
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
+drop table if exists schema_differ_source.schema_differ_remove_uk;
+create table schema_differ_source.schema_differ_remove_uk
+(
+    id int not null primary key,
+    value int unsigned not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
 alter table schema_differ_source.schema_differ_fks
         add constraint schema_differ_fks_0_fk
     foreign key (id)
@@ -177,6 +184,13 @@ create table schema_differ_target.schema_differ_fks
 (
     id int unsigned not null,
     col_a int unsigned not null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+
+drop table if exists schema_differ_target.schema_differ_remove_uk;
+create table schema_differ_target.schema_differ_remove_uk
+(
+    id int not null primary key,
+    value int unsigned not null unique
 ) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
 
 alter table schema_differ_target.schema_differ_fks

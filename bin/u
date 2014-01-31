@@ -14,8 +14,11 @@ require_once 'base/services/unit-testing.php';
 
 tiny_api_cli_main(
     tiny_Api_Cli_Conf::make()
-        ->add_description('Executes all unit tests found in the current '
-                          . 'working directory.'),
+        ->add_description('Executes unit tests for all files in the current '
+                          . 'directory or in the file name provided.')
+        ->add_arg('unit-test-file',
+                  'The name of the file to executes tests for.',
+                  false),
     'main');
 
 // +------------------------------------------------------------+
@@ -26,13 +29,31 @@ function main(tiny_api_Cli $cli)
 {
     $cli->header('Unit Tests');
 
-    exec("/usr/bin/find "
-         . getcwd()
-         . " -name \"*.php\" | /bin/grep \"/tests/\"",
-         $files, $retval);
+    $unit_test_file = $cli->get_arg('unit-test-file');
+    if (!empty($unit_test_file))
+    {
+        if (!is_file($unit_test_file))
+        {
+            $cli->error("Could not find file \"$unit_test_file\"!");
+            exit(1);
+        }
 
-    $utm = tiny_api_Unit_Test_Manager::make($cli)
-            ->execute($files)
-            ->print_summary();
+        $utm = tiny_api_Unit_Test_Manager::make($cli)
+                ->disable_tap()
+                ->disable_stop_on_failure()
+                ->execute(array($unit_test_file))
+                ->print_summary();
+    }
+    else
+    {
+        exec("/usr/bin/find "
+             . getcwd()
+             . " -name \"*.php\" | /bin/grep \"/tests/\"",
+             $files, $retval);
+
+        $utm = tiny_api_Unit_Test_Manager::make($cli)
+                ->execute($files)
+                ->print_summary();
+    }
 }
 ?>

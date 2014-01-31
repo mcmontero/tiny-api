@@ -54,6 +54,7 @@ class tiny_api_Mysql_Schema_Differ
     private $columns_to_create;
     private $columns_to_drop;
     private $columns_to_modify;
+    private $column_uniqueness_to_drop;
     private $foreign_keys_to_create;
     private $foreign_keys_to_drop;
     private $ref_data_to_add;
@@ -122,6 +123,11 @@ class tiny_api_Mysql_Schema_Differ
         $this->write_upgrade_scripts();
 
         return $this;
+    }
+
+    final public function get_column_uniqueness_to_drop()
+    {
+        return $this->column_uniqueness_to_drop;
     }
 
     final public function get_columns_to_create()
@@ -212,21 +218,22 @@ class tiny_api_Mysql_Schema_Differ
 
     final public function there_are_differences()
     {
-        return !empty($this->ref_tables_to_create)   ||
-               !empty($this->ref_tables_to_drop)     ||
-               !empty($this->tables_to_create)       ||
-               !empty($this->tables_to_drop)         ||
-               !empty($this->columns_to_create)      ||
-               !empty($this->columns_to_drop)        ||
-               !empty($this->columns_to_modify)      ||
-               !empty($this->foreign_keys_to_create) ||
-               !empty($this->foreign_keys_to_drop)   ||
-               !empty($this->ref_data_to_add)        ||
-               !empty($this->ref_data_to_remove)     ||
-               !empty($this->ref_data_to_modify)     ||
-               !empty($this->indexes_to_create)      ||
-               !empty($this->indexes_to_drop)        ||
-               !empty($this->unique_keys_to_create)  ||
+        return !empty($this->ref_tables_to_create)      ||
+               !empty($this->ref_tables_to_drop)        ||
+               !empty($this->tables_to_create)          ||
+               !empty($this->tables_to_drop)            ||
+               !empty($this->columns_to_create)         ||
+               !empty($this->columns_to_drop)           ||
+               !empty($this->columns_to_modify)         ||
+               !empty($this->column_uniqueness_to_drop) ||
+               !empty($this->foreign_keys_to_create)    ||
+               !empty($this->foreign_keys_to_drop)      ||
+               !empty($this->ref_data_to_add)           ||
+               !empty($this->ref_data_to_remove)        ||
+               !empty($this->ref_data_to_modify)        ||
+               !empty($this->indexes_to_create)         ||
+               !empty($this->indexes_to_drop)           ||
+               !empty($this->unique_keys_to_create)     ||
                !empty($this->unique_keys_to_drop);
     }
 
@@ -306,7 +313,8 @@ class tiny_api_Mysql_Schema_Differ
             $this->notice("(-) $column_to_drop", 1);
         }
 
-        $this->columns_to_modify = array();
+        $this->columns_to_modify         = array();
+        $this->column_uniqueness_to_drop = array();
         foreach ($source as $column_name => $column_data)
         {
             if (in_array($column_name, $this->columns_to_create) ||
@@ -324,12 +332,39 @@ class tiny_api_Mysql_Schema_Differ
 
             foreach ($column_data as $key => $value)
             {
+                $remove_uniqueness = false;
+
+                if ($key   == 'column_key' &&
+                    $value != 'UNI'        &&
+                    $target[ $column_name ][ $key ] == 'UNI')
+                {
+                    // This is special case handling when the unique key is
+                    // being removed from a column.  MySQL requires you to
+                    // drop the underlying unique index as opposed to modiyfing
+                    // the uniqueness off of the table.
+                    $this->notice("(-) $column_name (uniqueness)", 1);
+
+                    $this->column_uniqueness_to_drop[] = $column_name;
+
+                    $remove_uniqueness = true;
+                }
+
                 if ($target[ $column_name ][ $key ] != $value)
                 {
-                    $this->notice("(=) $column_name ($key)", 1);
+                    if ($key == 'column_key' && $remove_uniqueness)
+                    {
+                        // We've handled this above in the special case for
+                        // removing uniqueness.  See the comments there.
+                        // There is nothing to do here since the necessary
+                        // changes were recorded above.
+                    }
+                    else
+                    {
+                        $this->notice("(=) $column_name ($key)", 1);
 
-                    $this->columns_to_modify[ $column_name ] = $column_data;
-                    break;
+                        $this->columns_to_modify[ $column_name ] = $column_data;
+                        break;
+                    }
                 }
             }
         }
@@ -1222,6 +1257,27 @@ alter table <?= $column[ 'table_name' ] . "\n" ?>
 ?>
 alter table <?= $table_name . "\n" ?>
        drop <?= $column_name ?>;
+<?
+            $contents .= ob_get_clean() . "\n";
+        }
+
+        foreach ($this->column_uniqueness_to_drop as $column)
+        {
+            list($table_name, $column_name) = explode('.', $column);
+
+            $index = $this->query_target
+            (
+                __METHOD__,
+                'show index
+                 from ' . $this->target_db_name . ".$table_name
+                 where column_name = ?",
+                array($column_name)
+            );
+
+            ob_start();
+?>
+alter table <?= $index[ 0 ][ 'Table' ] . "\n" ?>
+       drop index <?= $index[ 0 ][ 'Key_name' ] ?>;
 <?
             $contents .= ob_get_clean() . "\n\n";
         }

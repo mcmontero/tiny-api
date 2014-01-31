@@ -193,5 +193,13 @@ extends PHPUnit_Framework_TestCase
         $this->assertEquals('schema_differ_drop_3_uk', $uks[ 0 ][ 'name' ]);
         $this->assertEquals('schema_differ_mod_2_uk', $uks[ 1 ][ 'name' ]);
     }
+
+    function test_column_uniqueness_to_drop()
+    {
+        $cols = $this->differ->get_column_uniqueness_to_drop();
+        $this->assertTrue(is_array($cols));
+        $this->assertEquals(1, count($cols));
+        $this->assertEquals('schema_differ_remove_uk.value', $cols[ 0 ]);
+    }
 }
 ?>

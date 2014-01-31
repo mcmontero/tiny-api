@@ -152,4 +152,12 @@ class tiny_api_Context_Exception extends tiny_api_Exception {}
 //
 
 class tiny_api_Data_Mapper_Exception extends tiny_api_Exception {}
+
+//
+// +------------------------------+
+// | tiny_api_Unit_Test_Exception |
+// +------------------------------+
+//
+
+class tiny_api_Unit_Test_Exception extends tiny_api_Exception {}
 ?>

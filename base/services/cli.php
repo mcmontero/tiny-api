@@ -272,13 +272,8 @@ class tiny_api_Cli_Conf
         if (!empty($this->description))
         {
             print $this->format_description('    ' . $this->description,
-                                            65, '    ')
-                  . "\n";
-
-            if (!empty($this->conf))
-            {
-                print "\n";
-            }
+                                            55, '    ')
+                  . "\n\n";
         }
 
         foreach ($this->conf as $arg => $data)

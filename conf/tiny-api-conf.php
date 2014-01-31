@@ -105,5 +105,12 @@ $__tiny_api_conf__ = array
      */
     'reference definition file' =>
         null,
+
+    /**
+     * The path, relative to the PHP include path, to a file to be included
+     * before any execution of unit tests using the u and uall commands.
+     */
+    'unit test bootstrap file' =>
+        null,
 );
 ?>
