@@ -24,7 +24,14 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
+require_once 'base/services/context.php';
 require_once 'PHPUnit/Autoload.php';
+
+// +------------------------------------------------------------+
+// | INSTRUCTIONS                                               |
+// +------------------------------------------------------------+
+
+tiny_api_Context::get_instance()->set_unit_test();
 
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
@@ -147,6 +154,7 @@ class tiny_api_Unit_Test_Manager
                                       . "====\n";
 
                                 exec('/usr/bin/phpunit '
+                                     . $this->get_phpunit_options() . ' '
                                      . '--filter ' . $matches[ 1 ] . ' '
                                      . $file . ' 2>&1',
                                      $error, $retval);
