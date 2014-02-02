@@ -59,6 +59,11 @@ function env_web()
     return tiny_api_Context::get_instance()->is_web();
 }
 
+function env_unit_test()
+{
+    return tiny_api_Context::get_instance()->is_unit_test();
+}
+
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+
@@ -80,6 +85,7 @@ class tiny_api_Context
     private $server_env;
     private $is_cli;
     private $is_web;
+    private $is_unit_test;
 
     function __construct()
     {
@@ -133,16 +139,28 @@ class tiny_api_Context
         return $this->is_cli;
     }
 
+    final public function is_unit_test()
+    {
+        return $this->is_unit_test;
+    }
+
     final public function is_web()
     {
         return $this->is_web;
     }
 
+    final public function set_unit_test()
+    {
+        $this->is_unit_test = true;
+        return $this;
+    }
+
     final public function reset()
     {
-        $this->server_env = null;
-        $this->is_cli     = false;
-        $this->is_web     = false;
+        $this->server_env   = null;
+        $this->is_cli       = false;
+        $this->is_web       = false;
+        $this->is_unit_test = false;
 
         if (!empty($_SERVER[ 'DOCUMENT_ROOT' ]))
         {
