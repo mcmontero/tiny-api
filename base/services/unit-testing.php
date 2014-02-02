@@ -251,10 +251,7 @@ class tiny_api_Unit_Test_Manager
             return null;
         }
 
-        $phpunit_bootstrap =
-            stream_resolve_include_path(
-                $__tiny_api_conf__[ 'unit test bootstrap file' ]);
-        if ($phpunit_bootstrap == false)
+        if (!is_file($__tiny_api_conf__[ 'unit test bootstrap file' ]))
         {
             throw new tiny_api_Unit_Test_Exception(
                         'could not find unit test bootstrap file "'
@@ -262,7 +259,7 @@ class tiny_api_Unit_Test_Manager
                         . '"');
         }
 
-        return $phpunit_bootstrap;
+        return $__tiny_api_conf__[ 'unit test bootstrap file' ];
     }
 
     private function get_phpunit_options()

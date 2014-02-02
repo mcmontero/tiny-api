@@ -107,8 +107,9 @@ $__tiny_api_conf__ = array
         null,
 
     /**
-     * The path, relative to the PHP include path, to a file to be included
-     * before any execution of unit tests using the u and uall commands.
+     * The unit testing system (u and uall) can pass a bootstrap file to
+     * phpunit before the execution of tests.  This provides a mechanism,
+     * for example, for centralizing the data loaded for unit tests.
      */
     'unit test bootstrap file' =>
         null,
