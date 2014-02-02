@@ -115,5 +115,11 @@ extends PHPUnit_Framework_TestCase
                             tiny_api_Context::get_instance()->get_server_env());
         $this->assertTrue(env_prod());
     }
+
+    function test_context_unit_test()
+    {
+        tiny_api_Context::get_instance()->set_unit_test();
+        $this->assertTrue(env_unit_test());
+    }
 }
 ?>
