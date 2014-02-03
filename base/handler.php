@@ -25,6 +25,7 @@
 // +------------------------------------------------------------+
 
 require_once 'base/data-store/provider.php';
+require_once 'base/services/context.php';
 
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
@@ -102,5 +103,17 @@ class tiny_api_Base_Handler
      * to perform application specific authentication.
      */
     public function secure() {}
+
+    final public function set_id($id)
+    {
+        if (!env_unit_test())
+        {
+            throw new tiny_api_Exception('setting ID outside of the unit test '
+                                         . 'context is not allowed');
+        }
+
+        $this->id = $id;
+        return $this;
+    }
 }
 ?>
