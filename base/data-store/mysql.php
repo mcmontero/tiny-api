@@ -452,7 +452,7 @@ extends tiny_api_Base_Rdbms
 
     private function param_is_bindable($value)
     {
-        if ($value == 'current_timestamp')
+        if ($value === 'current_timestamp')
         {
             return false;
         }
