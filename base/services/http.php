@@ -67,10 +67,7 @@ class tiny_api_Http_Manager
 {
     private static $instance;
 
-    function __construct()
-    {
-        $this->reset();
-    }
+    function __construct() {}
 
     static function get_instance()
     {
@@ -88,12 +85,7 @@ class tiny_api_Http_Manager
 
     final public function get_cookie($name)
     {
-        return array_key_exists($name, $_COOKIE) ?  $_COOKIE[ $name ] : null;
-    }
-
-    final public function reset()
-    {
-        $_COOKIE = array();
+        return array_key_exists($name, $_COOKIE) ? $_COOKIE[ $name ] : null;
     }
 
     final public function set_cookie($name,
