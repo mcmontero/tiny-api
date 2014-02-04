@@ -24,7 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/services/context.php';
+require_once 'base/context.php';
 require_once 'PHPUnit/Autoload.php';
 
 // +------------------------------------------------------------+

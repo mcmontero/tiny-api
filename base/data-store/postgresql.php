@@ -64,10 +64,13 @@ extends tiny_api_Base_Rdbms
                         . 'connection has not been established yet');
         }
 
-        if (!pg_query($this->postgresql, 'commit'))
+        if (!env_unit_test())
         {
-            throw new tiny_Api_Data_Store_Exception(
-                        'failed to commit transaction');
+            if (!pg_query($this->postgresql, 'commit'))
+            {
+                throw new tiny_Api_Data_Store_Exception(
+                            'failed to commit transaction');
+            }
         }
     }
 

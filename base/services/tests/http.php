@@ -52,5 +52,12 @@ extends PHPUnit_Framework_TestCase
         tiny_api_http_set_cookie('abc', 'def', 0, '/', 'domain.com');
         $this->assertEquals('def', tiny_api_http_get_cookie('abc'));
     }
+
+    function test_posting_http_param()
+    {
+        tiny_api_http_post_param('abc', 123);
+        $this->assertTrue(array_key_exists('abc', $_POST));
+        $this->assertEquals(123, $_POST[ 'abc' ]);
+    }
 }
 ?>

@@ -24,8 +24,8 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
+require_once 'base/context.php';
 require_once 'base/data-store/provider.php';
-require_once 'base/services/context.php';
 
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |

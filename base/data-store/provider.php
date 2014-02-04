@@ -24,6 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
+require_once 'base/context.php';
 require_once 'base/data-store/memcache.php';
 require_once 'base/services/table-builder/reference.php';
 

@@ -60,13 +60,16 @@ extends tiny_api_Base_Rdbms
                         . 'connection has not been established yet');
         }
 
-        if (!$this->mysql->commit())
+        if (!env_unit_test())
         {
-            throw new tiny_Api_Data_Store_Exception(
-                        'transaction commit failed');
-        }
+            if (!$this->mysql->commit())
+            {
+                throw new tiny_Api_Data_Store_Exception(
+                            'transaction commit failed');
+            }
 
-        $this->mysql->autocommit(true);
+            $this->mysql->autocommit(true);
+        }
     }
 
     final public function create($target, array $data, $return_insert_id = true)

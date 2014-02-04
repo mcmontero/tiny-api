@@ -24,7 +24,7 @@
 // | INCLUDES                                                   |
 // +------------------------------------------------------------+
 
-require_once 'base/services/context.php';
+require_once 'base/context.php';
 
 // +------------------------------------------------------------+
 // | PUBLIC FUNCTIONS                                           |
@@ -51,6 +51,11 @@ function tiny_api_http_set_cookie($name,
                      $domain,
                      $secure,
                      $http_only);
+}
+
+function tiny_api_http_post_param($name, $value)
+{
+    $_POST[ $name ] = $value;
 }
 
 // +------------------------------------------------------------+
