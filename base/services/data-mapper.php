@@ -287,7 +287,14 @@ class _tiny_api_Data_Mapper_Element
                         'cannot get value because it has not been validated');
         }
 
-        return $this->value;
+        if ($this->type_id == self::TYPE_NUMBER)
+        {
+            return $this->is_empty($this->value) ? null : $this->value;
+        }
+        else
+        {
+            return $this->value;
+        }
     }
 
     final public function get_name()

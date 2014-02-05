@@ -383,5 +383,29 @@ extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf('_tiny_api_Data_Mapper_Element', $elem);
         $this->assertEquals('abc', $elem->get_name());
     }
+
+    function test_number_elems_default_to_null_if_empty()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_NUMBER)
+                        ->set_value(0);
+        $elem->validate();
+
+        $this->assertTrue($elem->get() === 0);
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_NUMBER)
+                        ->set_value('');
+        $elem->validate();
+
+        $this->assertNull($elem->get());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_NUMBER)
+                        ->set_value(null);
+        $elem->validate();
+
+        $this->assertNull($elem->get());
+    }
 }
 ?>
