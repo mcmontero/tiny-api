@@ -59,5 +59,17 @@ extends PHPUnit_Framework_TestCase
         $this->assertTrue(array_key_exists('abc', $_POST));
         $this->assertEquals(123, $_POST[ 'abc' ]);
     }
+
+    function test_http_put_request()
+    {
+        $this->assertFalse(array_key_exists('REQUEST_METHOD', $_SERVER));
+
+        tiny_api_http_put_request();
+
+        $this->assertTrue(array_key_exists('REQUEST_METHOD', $_SERVER));
+        $this->assertEquals('PUT', $_SERVER[ 'REQUEST_METHOD' ]);
+
+        unset($_SERVER[ 'REQUEST_METHOD' ]);
+    }
 }
 ?>

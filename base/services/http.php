@@ -58,6 +58,11 @@ function tiny_api_http_post_param($name, $value)
     $_POST[ $name ] = $value;
 }
 
+function tiny_api_http_put_request()
+{
+    $_SERVER[ 'REQUEST_METHOD' ] = 'PUT';
+}
+
 // +------------------------------------------------------------+
 // | PUBLIC CLASSES                                             |
 // +------------------------------------------------------------+

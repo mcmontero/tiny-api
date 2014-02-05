@@ -282,5 +282,106 @@ extends PHPUnit_Framework_TestCase
         $this->assertEquals('def', $data[ 'abc' ]);
         $this->assertEquals(123, $data[ 'ghi' ]);
     }
+
+    function test_tiny_api_Data_Mapper_generate_post_data()
+    {
+        $dm = tiny_api_Data_Mapper::make()
+                ->char('abc', true)
+                ->char('def', true, 10)
+                ->dtt('ghi', true)
+                ->num('jkl', true)
+                ->password('mno', true)
+                ->password('pqr', true, 10)
+                ->num('stu', false)
+                ->generate_post_data(array('stu' => 987654321));
+
+        $this->assertNull($dm->validate());
+
+        $this->assertTrue(is_array($_POST));
+        $this->assertEquals(7, count($_POST));
+        $this->assertTrue(array_key_exists('abc', $_POST));
+        $this->assertTrue(array_key_exists('def', $_POST));
+        $this->assertTrue(array_key_exists('ghi', $_POST));
+        $this->assertTrue(array_key_exists('jkl', $_POST));
+        $this->assertTrue(array_key_exists('mno', $_POST));
+        $this->assertTrue(array_key_exists('pqr', $_POST));
+        $this->assertTrue(array_key_exists('stu', $_POST));
+        $this->assertEquals(4, strlen($_POST[ 'abc' ]));
+        $this->assertEquals(10, strlen($_POST[ 'def' ]));
+        $this->assertTrue((bool)preg_match('/^[0-9]{10,}$/', $_POST[ 'ghi' ]));
+        $this->assertTrue(is_int($_POST[ 'jkl' ]));
+        $this->assertEquals(4, strlen($_POST[ 'mno' ]));
+        $this->assertEquals(10, strlen($_POST[ 'pqr' ]));
+        $this->assertEquals(987654321, $_POST[ 'stu' ]);
+    }
+
+    function test_setting_data_on_put_manager()
+    {
+        $this->assertEmpty(
+            _tiny_api_Data_Mapper_Put_Manager::get_instance()->get_data());
+
+        _tiny_api_Data_Mapper_Put_Manager::get_instance()->set('abc', 123);
+        _tiny_api_Data_Mapper_Put_Manager::get_instance()->set('def', 456);
+
+        $data = _tiny_api_Data_Mapper_Put_Manager::get_instance()->get_data();
+        $this->assertTrue(is_array($data));
+        $this->assertEquals(2, count($data));
+        $this->assertTrue(array_key_exists('abc', $data));
+        $this->assertTrue(array_key_exists('def', $data));
+        $this->assertEquals(123, $data[ 'abc' ]);
+        $this->assertEquals(456, $data[ 'def' ]);
+    }
+
+    function test_tiny_api_Data_Mapper_generate_put_data()
+    {
+        $dm = tiny_api_Data_Mapper::make()
+                ->char('abc', true)
+                ->char('def', true, 10)
+                ->dtt('ghi', true)
+                ->num('jkl', true)
+                ->password('mno', true)
+                ->password('pqr', true, 10)
+                ->num('stu', false)
+                ->generate_put_data(array('stu' => 987654321));
+
+        $this->assertNull($dm->validate());
+
+        $data = _tiny_api_Data_Mapper_Put_Manager::get_instance()->get_data();
+        $this->assertTrue(is_array($data));
+        $this->assertEquals(7, count($data));
+        $this->assertTrue(array_key_exists('abc', $data));
+        $this->assertTrue(array_key_exists('def', $data));
+        $this->assertTrue(array_key_exists('ghi', $data));
+        $this->assertTrue(array_key_exists('jkl', $data));
+        $this->assertTrue(array_key_exists('mno', $data));
+        $this->assertTrue(array_key_exists('pqr', $data));
+        $this->assertTrue(array_key_exists('stu', $data));
+        $this->assertEquals(4, strlen($data[ 'abc' ]));
+        $this->assertEquals(10, strlen($data[ 'def' ]));
+        $this->assertTrue((bool)preg_match('/^[0-9]{10,}$/', $data[ 'ghi' ]));
+        $this->assertTrue(is_int($data[ 'jkl' ]));
+        $this->assertEquals(4, strlen($data[ 'mno' ]));
+        $this->assertEquals(10, strlen($data[ 'pqr' ]));
+        $this->assertEquals(987654321, $data[ 'stu' ]);
+    }
+
+    function test_getting_name_from_elem()
+    {
+        $this->assertEquals(
+            'abc',
+            _tiny_api_Data_Mapper_Element::make(
+                'abc', _tiny_api_Data_Mapper_Element::TYPE_NUMBER)
+                    ->get_name());
+    }
+
+    function test_getting_elem_from_data_mapper()
+    {
+        $dm = tiny_api_Data_Mapper::make()
+                ->char('abc', true);
+
+        $elem = $dm->get_elem('abc');
+        $this->assertInstanceOf('_tiny_api_Data_Mapper_Element', $elem);
+        $this->assertEquals('abc', $elem->get_name());
+    }
 }
 ?>

@@ -72,6 +72,31 @@ class tiny_api_Data_Mapper
         return $this;
     }
 
+    final public function generate_post_data($values = array())
+    {
+        $this->generate_data($values);
+
+        foreach ($this->elems as $name => $elem)
+        {
+            $_POST[ $name ] = $elem->get();
+        }
+
+        return $this;
+    }
+
+    final public function generate_put_data($values = array())
+    {
+        $this->generate_data($values);
+
+        foreach ($this->elems as $name => $elem)
+        {
+            _tiny_api_Data_Mapper_Put_Manager::get_instance()
+                ->set($name, $elem->get());
+        }
+
+        return $this;
+    }
+
     final public function get()
     {
         if ($this->was_validated === false)
@@ -88,6 +113,17 @@ class tiny_api_Data_Mapper
         }
 
         return $data;
+    }
+
+    final public function get_elem($name)
+    {
+        if (!array_key_exists($name, $this->elems))
+        {
+            throw new tiny_api_Data_Mapper_Exception(
+                        "no element exists with the name \"$name\"");
+        }
+
+        return $this->elems[ $name ];
     }
 
     final public function num($name, $required)
@@ -152,6 +188,23 @@ class tiny_api_Data_Mapper
     // +-----------------+
     // | Private Methods |
     // +-----------------+
+
+    private function generate_data($values = array())
+    {
+        foreach ($this->elems as $name => $elem)
+        {
+            if (array_key_exists($name, $values))
+            {
+                $elem->set_value($values[ $name ]);
+            }
+            else
+            {
+                $elem->set_random_value();
+            }
+        }
+
+        $this->validate();
+    }
 
     private function process_attributes(_tiny_api_Data_Mapper_Element $elem,
                                         $required,
@@ -237,6 +290,11 @@ class _tiny_api_Data_Mapper_Element
         return $this->value;
     }
 
+    final public function get_name()
+    {
+        return $this->name;
+    }
+
     final public function max_length($max_length)
     {
         if ($this->type_id != self::TYPE_CHAR &&
@@ -257,6 +315,37 @@ class _tiny_api_Data_Mapper_Element
         return $this;
     }
 
+    final public function set_random_value()
+    {
+        switch ($this->type_id)
+        {
+            case self::TYPE_NUMBER:
+                $this->set_value(intval(mt_rand(1, 10)));
+                break;
+
+            case self::TYPE_CHAR:
+            case self::TYPE_PASSWORD:
+                $max_length = 4;
+                if (!empty($this->max_length))
+                {
+                    $max_length = $this->max_length;
+                }
+
+                $this->set_value($this->random_string($max_length));
+                break;
+
+            case self::TYPE_DATETIME:
+                $this->set_value(time() - (86400 * mt_rand(0, 10)));
+                break;
+
+            default:
+                throw new tiny_api_Data_Mapper_Exception(
+                            "unrecognized type ID \""
+                            . $this->type_id
+                            . '"');
+        }
+    }
+
     final public function set_value($value = null)
     {
         $this->value_was_set = true;
@@ -271,21 +360,24 @@ class _tiny_api_Data_Mapper_Element
         {
             if ($_SERVER[ 'REQUEST_METHOD' ] == 'GET')
             {
-                $this->value = array_key_exists($this->name, $_GET) ?
-                                    $_GET[ $this->name ] : null;
+                $this->value =
+                    array_key_exists($this->name, $_GET) ?
+                        $_GET[ $this->name ] : null;
             }
             else if ($_SERVER[ 'REQUEST_METHOD' ] == 'POST')
             {
-                $this->value = array_key_exists($this->name, $_POST) ?
-                                    $_POST[ $this->name ] : null;
+                $this->value =
+                    array_key_exists($this->name, $_POST) ?
+                        $_POST[ $this->name ] : null;
             }
             else if ($_SERVER[ 'REQUEST_METHOD' ] == 'PUT')
             {
                 $put = _tiny_api_Data_Mapper_Put_Manager::get_instance()
-                        ->get_data();
+                            ->get_data();
 
-                $this->value = array_key_exists($this->name, $put) ?
-                                    $put[ $this->name ] : null;
+                $this->value =
+                    is_array($put) && array_key_exists($this->name, $put) ?
+                                $put[ $this->name ] : null;
             }
         }
 
@@ -380,6 +472,33 @@ class _tiny_api_Data_Mapper_Element
         return is_array($value) ? empty($value) : !strlen(strval($value)) > 0;
     }
 
+    private function random_string($length)
+    {
+        $string = "";
+        for ($i = 0; $i < $length; $i++)
+        {
+            switch (mt_rand(1,3))
+            {
+                case 1:
+                    // 0-9
+                    $string .= chr(mt_rand(48, 57));
+                    break;
+
+                case 2:
+                    // A-Z
+                    $string .= chr(mt_rand(65, 90));
+                    break;
+
+                case 3:
+                    // a-z
+                    $string .= chr(mt_rand(97, 122));
+                    break;
+            }
+        }
+
+        return $string;
+    }
+
     private function validate_type_id($type_id)
     {
         if (!array_key_exists($type_id, array(self::TYPE_NUMBER   => 1,
@@ -440,6 +559,17 @@ class _tiny_api_Data_Mapper_Put_Manager
         }
 
         return $this->data;
+    }
+
+    final public function set($name, $value)
+    {
+        if (is_null($this->data))
+        {
+            $this->data = array();
+        }
+
+        $this->data[ $name ] = $value;
+        return $this;
     }
 
     final public function reset()
