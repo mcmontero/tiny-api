@@ -150,7 +150,12 @@ function _tiny_api_dispatcher_route_and_respond($version,
     // Include the PHP file that contains the handler.
     //
 
-    require_once "$version/" . preg_replace('/_/', '-', $entity) . ".php";
+    @include_once "$version/" . preg_replace('/_/', '-', $entity) . ".php";
+    if (isset($php_errormsg))
+    {
+        http_response_code(TINY_API_RESPONSE_NOT_FOUND);
+        exit(1);
+    }
 
     //
     // Create and execute the handler and response.
