@@ -148,7 +148,7 @@ class tiny_api_Data_Mapper
         return $this;
     }
 
-    final public function validate()
+    public function validate()
     {
         $this->was_validated = true;
 
