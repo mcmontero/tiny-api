@@ -142,6 +142,19 @@ class tiny_api_Table
         return $this;
     }
 
+    final public function coll($name)
+    {
+        if (!($this->active_column instanceof _tiny_api_Mysql_String_Column))
+        {
+            throw new tiny_api_Table_Builder_Exception(
+                        'collation can only be set on string columns');
+        }
+
+        $this->active_column->collation($name);
+
+        return $this;
+    }
+
     final public function created()
     {
         $this->dtt('date_created', true);

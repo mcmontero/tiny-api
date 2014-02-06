@@ -1452,5 +1452,37 @@ create table abc
                 ->vchar('abc', 10)
                 ->get_definition());
     }
+
+    function test_setting_column_collation_on_table_exceptions()
+    {
+        try
+        {
+            tiny_api_Table::make('abc', 'def')->serial()->coll('ghi');
+
+            $this->fail('Was able to set collation on a non-string column.');
+        }
+        catch (tiny_api_Table_Builder_Exception $e)
+        {
+            $this->assertEquals('collation can only be set on string columns',
+                                $e->get_text());
+        }
+    }
+
+    function test_setting_column_collation_on_table()
+    {
+        ob_start();
+?>
+create table def
+(
+    ghi varchar(30) collate jkl default null
+) engine = innodb default charset = utf8 collate = utf8_unicode_ci;
+<?
+        $this->assertEquals(
+            trim(ob_get_clean()),
+            tiny_api_Table::make('abc', 'def')
+                ->vchar('ghi', 30)
+                    ->coll('jkl')
+                ->get_definition());
+    }
 }
 ?>
