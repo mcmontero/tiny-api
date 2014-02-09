@@ -407,5 +407,28 @@ extends PHPUnit_Framework_TestCase
 
         $this->assertNull($elem->get());
     }
+
+    function test_removing_element()
+    {
+        $dm = tiny_api_Data_Mapper::make()
+                ->char('abc', true);
+
+        $elem = $dm->get_elem('abc');
+        $this->assertInstanceOf('_tiny_api_Data_Mapper_Element', $elem);
+
+        $dm->remove_elem('abc');
+
+        try
+        {
+            $dm->get_elem('abc');
+
+            $this->fail('Was able to get element even though it was removed.');
+        }
+        catch (tiny_api_Data_Mapper_Exception $e)
+        {
+            $this->assertEquals('no element exists with the name "abc"',
+                                $e->get_text());
+        }
+    }
 }
 ?>

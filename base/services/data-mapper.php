@@ -148,6 +148,18 @@ class tiny_api_Data_Mapper
         return $this;
     }
 
+    final public function remove_elem($name)
+    {
+        if (!array_key_exists($name, $this->elems))
+        {
+            throw new tiny_api_Data_Mapper_Exception(
+                        "no element exists with the name \"$name\"");
+        }
+
+        unset($this->elems[ $name ]);
+        return $this;
+    }
+
     public function validate()
     {
         $this->was_validated = true;
