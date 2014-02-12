@@ -126,6 +126,17 @@ class tiny_api_Data_Mapper
         return $this->elems[ $name ];
     }
 
+    final public function image($name, $required)
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    $name, _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+        $this->process_attributes($elem, $required);
+
+        $this->elems[ $name ] = $elem;
+
+        return $this;
+    }
+
     final public function num($name, $required)
     {
         $elem = _tiny_api_Data_Mapper_Element::make(
@@ -183,6 +194,10 @@ class tiny_api_Data_Mapper
 
                     case _tiny_api_Data_Mapper_Element::ERROR_MAX_LENGTH:
                         $error = 'max_length';
+                        break;
+
+                    case _tiny_api_Data_Mapper_Element::ERROR_UPLOAD:
+                        $error = $elem->get_upload_error();
                         break;
 
                     default:
@@ -252,11 +267,13 @@ class _tiny_api_Data_Mapper_Element
     const TYPE_CHAR     = 2;
     const TYPE_PASSWORD = 3;
     const TYPE_DATETIME = 4;
+    const TYPE_IMAGE    = 5;
 
     const ERROR_NONE       = 1;
     const ERROR_TYPE       = 2;
     const ERROR_REQUIRED   = 3;
     const ERROR_MAX_LENGTH = 4;
+    const ERROR_UPLOAD     = 5;
 
     private $name;
     private $type_id;
@@ -265,6 +282,7 @@ class _tiny_api_Data_Mapper_Element
     private $value;
     private $value_was_set;
     private $value_was_validated;
+    private $upload_error;
 
     function __construct($name, $type_id)
     {
@@ -314,6 +332,11 @@ class _tiny_api_Data_Mapper_Element
         return $this->name;
     }
 
+    final public function get_upload_error()
+    {
+        return $this->upload_error;
+    }
+
     final public function max_length($max_length)
     {
         if ($this->type_id != self::TYPE_CHAR &&
@@ -357,12 +380,26 @@ class _tiny_api_Data_Mapper_Element
                 $this->set_value(time() - (86400 * mt_rand(0, 10)));
                 break;
 
+            case self::TYPE_IMAGE:
+                $this->set_value(
+                    array
+                    (
+                        'name'     => $this->name,
+                        'type'     => 'image/jpeg',
+                        'tmp_name' => '/tmp/php' . $this->random_string(5),
+                        'error'    => UPLOAD_ERR_OK,
+                        'size'     => mt_rand(1000, 100000)
+                    ));
+                break;
+
             default:
                 throw new tiny_api_Data_Mapper_Exception(
                             "unrecognized type ID \""
                             . $this->type_id
                             . '"');
         }
+
+        return $this;
     }
 
     final public function set_value($value = null)
@@ -375,7 +412,12 @@ class _tiny_api_Data_Mapper_Element
             return $this;
         }
 
-        if (array_key_exists('REQUEST_METHOD', $_SERVER))
+        if ($this->type_id == self::TYPE_IMAGE)
+        {
+            $this->value = array_key_exists($this->name, $_FILES) ?
+                                $_FILES[ $this->name ] : null;
+        }
+        else if (array_key_exists('REQUEST_METHOD', $_SERVER))
         {
             if ($_SERVER[ 'REQUEST_METHOD' ] == 'GET')
             {
@@ -412,23 +454,34 @@ class _tiny_api_Data_Mapper_Element
             $this->set_value();
         }
 
-        if ($this->required && $this->is_empty($this->value))
+        if ($this->required)
         {
-            if (is_array($this->value))
+            if ($this->type_id == self::TYPE_IMAGE)
             {
-                foreach ($this->value as $value)
+                if (!array_key_exists($this->name, $_FILES) ||
+                    $_FILES[ $this->name ][ 'error' ] !== 0)
                 {
-                    if ($this->is_empty($value))
+                    return self::ERROR_REQUIRED;
+                }
+            }
+            else if ($this->is_empty($this->value))
+            {
+                if (is_array($this->value))
+                {
+                    foreach ($this->value as $value)
+                    {
+                        if ($this->is_empty($value))
+                        {
+                            return self::ERROR_REQUIRED;
+                        }
+                    }
+                }
+                else
+                {
+                    if ($this->is_empty($this->value))
                     {
                         return self::ERROR_REQUIRED;
                     }
-                }
-            }
-            else
-            {
-                if ($this->is_empty($this->value))
-                {
-                    return self::ERROR_REQUIRED;
                 }
             }
         }
@@ -477,6 +530,42 @@ class _tiny_api_Data_Mapper_Element
                     }
                 }
                 break;
+
+            case self::TYPE_IMAGE:
+                switch ($this->value[ 'error' ])
+                {
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $this->upload_error = 'file is too big';
+                        return self::ERROR_UPLOAD;
+
+                    case UPLOAD_ERR_PARTIAL:
+                        $this->upload_error = 'partial upload';
+                        return self::ERROR_UPLOAD;
+
+                    case UPLOAD_ERR_NO_FILE:
+                        $this->upload_error = 'no file was uploaded';
+                        return self::ERROR_UPLOAD;
+
+                    case UPLOAD_ERR_NO_TMP_DIR:
+                        $this->upload_error = 'no temporary directory';
+                        return self::ERROR_UPLOAD;
+
+                    case UPLOAD_ERR_CANT_WRITE:
+                        $this->upload_error = 'failed to write';
+                        return self::ERROR_UPLOAD;
+
+                    case UPLOAD_ERR_EXTENSION:
+                        $this->upload_error = 'extension';
+                        return self::ERROR_UPLOAD;
+                }
+
+                list($type, $kind) = explode('/', $this->value[ 'type' ]);
+                if ($type != 'image')
+                {
+                    return self::ERROR_TYPE;
+                }
+                break;
         }
 
         return self::ERROR_NONE;
@@ -523,7 +612,8 @@ class _tiny_api_Data_Mapper_Element
         if (!array_key_exists($type_id, array(self::TYPE_NUMBER   => 1,
                                               self::TYPE_CHAR     => 1,
                                               self::TYPE_PASSWORD => 1,
-                                              self::TYPE_DATETIME => 1)))
+                                              self::TYPE_DATETIME => 1,
+                                              self::TYPE_IMAGE    => 1)))
         {
             throw new tiny_api_Data_Mapper_Exception(
                         "unrecognized type ID \"$type_id\"");

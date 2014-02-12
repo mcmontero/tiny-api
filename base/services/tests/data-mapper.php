@@ -430,5 +430,205 @@ extends PHPUnit_Framework_TestCase
                                 $e->get_text());
         }
     }
+
+    function test_image_required()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE)
+                        ->required();
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_REQUIRED,
+                            $elem->validate());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_INI_SIZE,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE)
+                        ->required();
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_REQUIRED,
+                            $elem->validate());
+    }
+
+    function test_image_upload_errors()
+    {
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_INI_SIZE,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('file is too big', $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_FORM_SIZE,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('file is too big', $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_PARTIAL,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('partial upload', $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_NO_FILE,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('no file was uploaded', $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_NO_TMP_DIR,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('no temporary directory',
+                            $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_CANT_WRITE,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('failed to write', $elem->get_upload_error());
+
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => '',
+            'tmp_name' => '',
+            'error'    => UPLOAD_ERR_EXTENSION,
+            'size'     => ''
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_UPLOAD,
+                            $elem->validate());
+        $this->assertEquals('extension', $elem->get_upload_error());
+    }
+
+    function test_image_type()
+    {
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => 'text/html',
+            'tmp_name' => '/tmp/php12345',
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => 12345
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_TYPE,
+                            $elem->validate());
+    }
+
+    function test_getting_image()
+    {
+        $_FILES[ 'abc' ] = array
+        (
+            'name'     => 'def',
+            'type'     => 'image/jpeg',
+            'tmp_name' => '/tmp/php12345',
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => 12345
+        );
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE)
+                        ->set_value();
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+
+        $file = $elem->get();
+        $this->assertTrue(is_array($file));
+    }
+
+    function test_setting_random_value_for_image()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE)
+                        ->set_random_value();
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+
+        $value = $elem->get();
+        $this->assertTrue(is_array($value));
+        $this->assertTrue(array_key_exists('name', $value));
+        $this->assertTrue(array_key_exists('type', $value));
+        $this->assertTrue(array_key_exists('tmp_name', $value));
+        $this->assertTrue(array_key_exists('error', $value));
+        $this->assertTrue(array_key_exists('size', $value));
+    }
 }
 ?>
