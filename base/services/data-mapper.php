@@ -137,6 +137,28 @@ class tiny_api_Data_Mapper
         return $this;
     }
 
+    final public function lat($name, $required)
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    $name, _tiny_api_Data_Mapper_Element::TYPE_LATITUDE);
+        $this->process_attributes($elem, $required);
+
+        $this->elems[ $name ] = $elem;
+
+        return $this;
+    }
+
+    final public function long($name, $required)
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    $name, _tiny_api_Data_Mapper_Element::TYPE_LONGITUDE);
+        $this->process_attributes($elem, $required);
+
+        $this->elems[ $name ] = $elem;
+
+        return $this;
+    }
+
     final public function num($name, $required)
     {
         $elem = _tiny_api_Data_Mapper_Element::make(
@@ -263,11 +285,13 @@ class tiny_api_Data_Mapper
 
 class _tiny_api_Data_Mapper_Element
 {
-    const TYPE_NUMBER   = 1;
-    const TYPE_CHAR     = 2;
-    const TYPE_PASSWORD = 3;
-    const TYPE_DATETIME = 4;
-    const TYPE_IMAGE    = 5;
+    const TYPE_NUMBER    = 1;
+    const TYPE_CHAR      = 2;
+    const TYPE_PASSWORD  = 3;
+    const TYPE_DATETIME  = 4;
+    const TYPE_IMAGE     = 5;
+    const TYPE_LATITUDE  = 6;
+    const TYPE_LONGITUDE = 7;
 
     const ERROR_NONE       = 1;
     const ERROR_TYPE       = 2;
@@ -392,6 +416,14 @@ class _tiny_api_Data_Mapper_Element
                     ));
                 break;
 
+            case self::TYPE_LATITUDE:
+                $this->set_value(mt_rand(-90, 90));
+                break;
+
+            case self::TYPE_LONGITUDE:
+                $this->set_value(mt_rand(-180, 80));
+                break;
+
             default:
                 throw new tiny_api_Data_Mapper_Exception(
                             "unrecognized type ID \""
@@ -464,24 +496,21 @@ class _tiny_api_Data_Mapper_Element
                     return self::ERROR_REQUIRED;
                 }
             }
-            else if ($this->is_empty($this->value))
+            else if (is_array($this->value))
             {
-                if (is_array($this->value))
+                foreach ($this->value as $value)
                 {
-                    foreach ($this->value as $value)
-                    {
-                        if ($this->is_empty($value))
-                        {
-                            return self::ERROR_REQUIRED;
-                        }
-                    }
-                }
-                else
-                {
-                    if ($this->is_empty($this->value))
+                    if ($this->is_empty($value))
                     {
                         return self::ERROR_REQUIRED;
                     }
+                }
+            }
+            else
+            {
+                if ($this->is_empty($this->value))
+                {
+                    return self::ERROR_REQUIRED;
                 }
             }
         }
@@ -566,6 +595,22 @@ class _tiny_api_Data_Mapper_Element
                     return self::ERROR_TYPE;
                 }
                 break;
+
+            case self::TYPE_LATITUDE:
+                if (!$this->is_empty($this->value) &&
+                    ($this->value < -90 || $this->value > 90))
+                {
+                    return self::ERROR_TYPE;
+                }
+                break;
+
+            case self::TYPE_LONGITUDE:
+                if (!$this->is_empty($this->value) &&
+                    ($this->value < -180 || $this->value > 180))
+                {
+                    return self::ERROR_TYPE;
+                }
+                break;
         }
 
         return self::ERROR_NONE;
@@ -609,11 +654,13 @@ class _tiny_api_Data_Mapper_Element
 
     private function validate_type_id($type_id)
     {
-        if (!array_key_exists($type_id, array(self::TYPE_NUMBER   => 1,
-                                              self::TYPE_CHAR     => 1,
-                                              self::TYPE_PASSWORD => 1,
-                                              self::TYPE_DATETIME => 1,
-                                              self::TYPE_IMAGE    => 1)))
+        if (!array_key_exists($type_id, array(self::TYPE_NUMBER    => 1,
+                                              self::TYPE_CHAR      => 1,
+                                              self::TYPE_PASSWORD  => 1,
+                                              self::TYPE_DATETIME  => 1,
+                                              self::TYPE_IMAGE     => 1,
+                                              self::TYPE_LATITUDE  => 1,
+                                              self::TYPE_LONGITUDE => 1)))
         {
             throw new tiny_api_Data_Mapper_Exception(
                         "unrecognized type ID \"$type_id\"");

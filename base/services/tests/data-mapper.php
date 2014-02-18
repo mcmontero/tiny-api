@@ -630,5 +630,67 @@ extends PHPUnit_Framework_TestCase
         $this->assertTrue(array_key_exists('error', $value));
         $this->assertTrue(array_key_exists('size', $value));
     }
+
+    function test_latitude_type()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LATITUDE)
+                        ->set_value(-90.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_TYPE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LATITUDE)
+                        ->set_value(90.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_TYPE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LATITUDE)
+                        ->set_value(-89.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LATITUDE)
+                        ->set_value(89.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+    }
+
+    function test_longitude_type()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LONGITUDE)
+                        ->set_value(-180.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_TYPE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LONGITUDE)
+                        ->set_value(180.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_TYPE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LONGITUDE)
+                        ->set_value(-179.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_LONGITUDE)
+                        ->set_value(179.01);
+
+        $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
+                            $elem->validate());
+    }
 }
 ?>
