@@ -561,38 +561,48 @@ class _tiny_api_Data_Mapper_Element
                 break;
 
             case self::TYPE_IMAGE:
-                switch ($this->value[ 'error' ])
+                if (is_array($this->value))
                 {
-                    case UPLOAD_ERR_INI_SIZE:
-                    case UPLOAD_ERR_FORM_SIZE:
-                        $this->upload_error = 'file is too big';
-                        return self::ERROR_UPLOAD;
+                    if (array_key_exists('error', $this->value))
+                    {
+                        switch ($this->value[ 'error' ])
+                        {
+                            case UPLOAD_ERR_INI_SIZE:
+                            case UPLOAD_ERR_FORM_SIZE:
+                                $this->upload_error = 'file is too big';
+                                return self::ERROR_UPLOAD;
 
-                    case UPLOAD_ERR_PARTIAL:
-                        $this->upload_error = 'partial upload';
-                        return self::ERROR_UPLOAD;
+                            case UPLOAD_ERR_PARTIAL:
+                                $this->upload_error = 'partial upload';
+                                return self::ERROR_UPLOAD;
 
-                    case UPLOAD_ERR_NO_FILE:
-                        $this->upload_error = 'no file was uploaded';
-                        return self::ERROR_UPLOAD;
+                            case UPLOAD_ERR_NO_FILE:
+                                $this->upload_error = 'no file was uploaded';
+                                return self::ERROR_UPLOAD;
 
-                    case UPLOAD_ERR_NO_TMP_DIR:
-                        $this->upload_error = 'no temporary directory';
-                        return self::ERROR_UPLOAD;
+                            case UPLOAD_ERR_NO_TMP_DIR:
+                                $this->upload_error = 'no temporary directory';
+                                return self::ERROR_UPLOAD;
 
-                    case UPLOAD_ERR_CANT_WRITE:
-                        $this->upload_error = 'failed to write';
-                        return self::ERROR_UPLOAD;
+                            case UPLOAD_ERR_CANT_WRITE:
+                                $this->upload_error = 'failed to write';
+                                return self::ERROR_UPLOAD;
 
-                    case UPLOAD_ERR_EXTENSION:
-                        $this->upload_error = 'extension';
-                        return self::ERROR_UPLOAD;
-                }
+                            case UPLOAD_ERR_EXTENSION:
+                                $this->upload_error = 'extension';
+                                return self::ERROR_UPLOAD;
+                        }
+                    }
 
-                list($type, $kind) = explode('/', $this->value[ 'type' ]);
-                if ($type != 'image')
-                {
-                    return self::ERROR_TYPE;
+                    if (array_key_exists('type', $this->value))
+                    {
+                        list($type, $kind) =
+                            explode('/', $this->value[ 'type' ]);
+                        if ($type != 'image')
+                        {
+                            return self::ERROR_TYPE;
+                        }
+                    }
                 }
                 break;
 

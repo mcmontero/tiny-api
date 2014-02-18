@@ -692,5 +692,14 @@ extends PHPUnit_Framework_TestCase
         $this->assertEquals(_tiny_api_Data_Mapper_Element::ERROR_NONE,
                             $elem->validate());
     }
+
+    function test_image_not_required_no_value()
+    {
+        $elem = _tiny_api_Data_Mapper_Element::make(
+                    'abc', _tiny_api_Data_Mapper_Element::TYPE_IMAGE);
+
+        // This was causing issues because the $_FILES array was empty.
+        $elem->validate();
+    }
 }
 ?>
