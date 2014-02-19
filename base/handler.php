@@ -39,9 +39,13 @@ require_once 'base/data-store/provider.php';
 
 class tiny_api_Base_Handler
 {
+    private $content_type;
     protected $id;
 
-    function __construct() {}
+    function __construct()
+    {
+        $this->content_type = 'application/json';
+    }
 
     // +----------------+
     // | Public Methods |
@@ -88,6 +92,11 @@ class tiny_api_Base_Handler
         return new tiny_api_Response_Not_Implemented();
     }
 
+    public function get_content_type()
+    {
+        return $this->content_type;
+    }
+
     public function post()
     {
         return new tiny_api_Response_Not_Implemented();
@@ -114,6 +123,11 @@ class tiny_api_Base_Handler
 
         $this->id = $id;
         return $this;
+    }
+
+    final public function text_html()
+    {
+        $this->content_type = 'text/html';
     }
 }
 ?>

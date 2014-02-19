@@ -175,7 +175,7 @@ function _tiny_api_dispatcher_route_and_respond($version,
         exit(1);
     }
 
-    header('Content-Type: application/json');
+    header('Content-Type: ' . $class->get_content_type());
     http_response_code($response->get_code());
     print json_encode($response->get_data());
 }
