@@ -41,5 +41,16 @@ extends PHPUnit_Framework_TestCase
         $handler->text_htmL();
         $this->assertEquals('text/html', $handler->get_content_type());
     }
+
+    function test_jsonp()
+    {
+        $handler = new tiny_api_Base_Handler();
+        $this->assertFalse($handler->response_as_jsonp());
+
+        $_GET[ 'jsonp' ] = 1;
+
+        $handler = new tiny_api_Base_Handler();
+        $this->assertTrue($handler->response_as_jsonp());
+    }
 }
 ?>

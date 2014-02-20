@@ -40,11 +40,13 @@ require_once 'base/data-store/provider.php';
 class tiny_api_Base_Handler
 {
     private $content_type;
+    private $jsonp;
     protected $id;
 
     function __construct()
     {
         $this->content_type = 'application/json';
+        $this->jsonp        = (bool)array_key_exists('jsonp', $_GET);
     }
 
     // +----------------+
@@ -105,6 +107,11 @@ class tiny_api_Base_Handler
     public function put()
     {
         return new tiny_api_Response_Not_Implemented();
+    }
+
+    final public function response_as_jsonp()
+    {
+        return $this->jsonp;
     }
 
     /**
