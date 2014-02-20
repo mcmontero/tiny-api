@@ -180,6 +180,6 @@ function _tiny_api_dispatcher_route_and_respond($version,
     $response = json_encode($response->get_data());
 
     print ($class->response_as_jsonp() ?
-            "__jsonp_handler__('$response');" : $response);
+            "__jsonp_handler__($response);" : $response);
 }
 ?>
