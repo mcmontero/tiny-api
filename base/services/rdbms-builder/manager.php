@@ -852,9 +852,17 @@ class tiny_api_Rdbms_Builder_Manager
             if (preg_match('/^ERROR 1005/', $output[ 0 ]) &&
                 preg_match('/errno: 150/', $output[ 0 ]))
             {
-                $output[ count($output) ] =
-                    'A column that has a foreign key is not the exact same '
-                    . 'type as the column it is referencing.';
+                $index = count($output);
+
+                $output[ $index++ ] =
+                    'Possible causes of this issue are:';
+                $output[ $index++ ] =
+                    "  - A column that has a foreign key is not the exact\n"
+                    . '               same type as the column it is '
+                    . 'referencing.';
+                $output[ $index++ ] =
+                    "  - The column you are trying to reference does not have\n"
+                    . '               an index on it.';
             }
         }
 
