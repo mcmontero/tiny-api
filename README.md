@@ -1,4 +1,4 @@
-The tiny api Project
+The PHP tiny api Project
 Copyright 2013 Michael C. Montero (mcmontero@gmail.com)
 
 GOALS
