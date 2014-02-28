@@ -74,9 +74,9 @@ function tiny_api_cli_main(tiny_api_Cli_Conf $conf, $main)
 // +------------------------------------------------------------+
 
 //
-// +--------------+
-// | tiny_api_Cli |
-// +--------------+
+// +-------------------+
+// | tiny_api_Cli_Conf |
+// +-------------------+
 //
 
 class tiny_api_Cli_Conf
