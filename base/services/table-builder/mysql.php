@@ -751,6 +751,18 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
+    final public function ti($name, $not_null = false)
+    {
+        $this->add_column(
+            _tiny_api_Mysql_Date_Time_Column::make($name)
+                ->date_time_type(
+                    _tiny_api_Mysql_Date_Time_Column::TYPE_TIME));
+
+        $this->set_attributes($not_null, null, null);
+
+        return $this;
+    }
+
     final public function tint($name,
                                $max_display_width = null,
                                $not_null = false,
@@ -763,18 +775,6 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
                                $max_display_width));
 
         $this->set_attributes($not_null, $unsigned, $zero_fill);
-
-        return $this;
-    }
-
-    final public function ti($name, $not_null = false)
-    {
-        $this->add_column(
-            _tiny_api_Mysql_Date_Time_Column::make($name)
-                ->date_time_type(
-                    _tiny_api_Mysql_Date_Time_Column::TYPE_TIME));
-
-        $this->set_attributes($not_null, null, null);
 
         return $this;
     }
