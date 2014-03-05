@@ -714,7 +714,7 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
     {
         $this->add_column(
             _tiny_api_Mysql_Numeric_Column::make($name)
-                ->integer_type(_tiny_api_Mysql_Numeric_Column::SMALLINT,
+                ->integer_type(_tiny_api_Mysql_Numeric_Column::TYPE_SMALLINT,
                                $max_display_width));
 
         $this->set_attributes($not_null, $unsigned, $zero_fill);
