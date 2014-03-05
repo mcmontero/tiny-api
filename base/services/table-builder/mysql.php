@@ -802,15 +802,6 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
         return $this;
     }
 
-    final public function updated()
-    {
-        $this->ts('date_updated', true);
-
-        $this->active_column->on_update('current_timestamp');
-
-        return $this;
-    }
-
     final public function uk($cols = null)
     {
         if (is_null($cols))
@@ -839,6 +830,15 @@ create<?= $this->temporary ? ' temporary' : '' ?> table <?= $this->name . "\n" ?
             $this->unique_keys[] = $unique_key;
             $this->add_indexed_cols($unique_key);
         }
+
+        return $this;
+    }
+
+    final public function updated()
+    {
+        $this->ts('date_updated', true);
+
+        $this->active_column->on_update('current_timestamp');
 
         return $this;
     }
