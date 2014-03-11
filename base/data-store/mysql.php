@@ -106,7 +106,9 @@ extends tiny_api_Base_Rdbms
             if ($dss->errno == 1062)
             {
                 throw new tiny_api_Data_Store_Duplicate_Key_Exception(
-                                        $dss->error);
+                            "execution of this query:\n\n$query\n\n"
+                            . print_r($vals, true)
+                            . "\nproduced this error:\n\n" . $dss->error);
             }
             else
             {
